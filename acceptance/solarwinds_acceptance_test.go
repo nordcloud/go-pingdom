@@ -31,7 +31,7 @@ func TestInviteUser(t *testing.T) {
 	if !runSolarwindsAcceptance {
 		t.Skip()
 	}
-	err := solarwindsClient.InviteUser(&solarwinds.UserInvitation{
+	err := solarwindsClient.InvitationService.InviteUser(&solarwinds.Invitation{
 		Email: solarwinds.RandString(10) + "@foo.com",
 		Role:  "MEMBER",
 		Products: []solarwinds.ProductSetting{

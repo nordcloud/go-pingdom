@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"golang.org/x/net/html"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 )
 
 const (
 	defaultBaseURL        = "https://my.solarwinds.cloud"
+	graphQLEndpoint       = "/common/graphql"
 	headerNameSetCookie   = "Set-Cookie"
 	cookieNameSwicus      = "swicus"
 	cookieNameSwiSettings = "swi-settings"
@@ -21,24 +21,19 @@ const (
 )
 
 type Client struct {
-	csrfToken   string
-	swiSettings string
-	email       string
-	password    string
-	client      *http.Client
-	baseURL     string
+	csrfToken         string
+	swiSettings       string
+	email             string
+	password          string
+	client            *http.Client
+	baseURL           string
+	InvitationService *InvitationService
 }
 
 type ClientConfig struct {
 	Username string
 	Password string
 	BaseURL  string
-}
-
-type UserInvitation struct {
-	Email    string           `json:"email"`
-	Role     string           `json:"role"`
-	Products []ProductSetting `json:"products"`
 }
 
 type ProductSetting struct {
@@ -74,6 +69,7 @@ func NewClient(config ClientConfig) (*Client, error) {
 		baseURL:  baseURLToUse.String(),
 	}
 	c.client = http.DefaultClient
+	c.InvitationService = &InvitationService{client: c}
 	return c, nil
 }
 
@@ -91,8 +87,8 @@ func (c *Client) Init() error {
 	return nil
 }
 
-func (c *Client) NewGraphQLRequest(method string, params io.Reader) (*http.Request, error) {
-	baseURL, err := url.Parse(c.baseURL + "/common/graphql")
+func (c *Client) NewRequest(method string, rsc string, params io.Reader) (*http.Request, error) {
+	baseURL, err := url.Parse(c.baseURL + rsc)
 	if err != nil {
 		return nil, err
 	}
@@ -110,36 +106,28 @@ func (c *Client) NewGraphQLRequest(method string, params io.Reader) (*http.Reque
 	return req, err
 }
 
-func (c *Client) InviteUser(user *UserInvitation) error {
-	variables := map[string]*UserInvitation{
-		"input": user,
-	}
-	params := map[string]interface{}{
-		"operationName": "createOrganizationAdminMutation",
-		"query":         "mutation createOrganizationAdminMutation($input: CreateOrganizationInvitationInput!) {\n  createOrganizationInvitation(input: $input) {\n    success\n    code\n    message\n    invitation {\n      email\n      role\n      __typename\n    }\n    __typename\n  }\n}\n",
-		"variables":     variables,
-	}
-	body, err := toJsonNoEscape(params)
+func (c *Client) MakeGraphQLRequest(graphQLRequest *GraphQLRequest) (*GraphQLResponse, error) {
+	body, err := toJsonNoEscape(graphQLRequest)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	req, err := c.NewGraphQLRequest("POST", bytes.NewReader(body))
+	req, err := c.NewRequest("POST", graphQLEndpoint, bytes.NewReader(body))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer resp.Body.Close()
-	var bodyStr string
-	if b, err := ioutil.ReadAll(resp.Body); err != nil {
-		return err
-	} else {
-		bodyStr = string(b)
+	graphQLResp, err := NewGraphQLResponse(resp.Body, graphQLRequest.ResponseType)
+	if err != nil {
+		return nil, err
 	}
-	fmt.Println(bodyStr)
-	return nil
+	if !graphQLResp.isSuccess() {
+		return nil, fmt.Errorf("request failed with message: %v", graphQLResp.message())
+	}
+	return graphQLResp, err
 }
 
 func (c *Client) login() (*loginResult, error) {

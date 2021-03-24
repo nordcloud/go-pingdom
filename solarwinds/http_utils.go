@@ -1,21 +1,11 @@
 package solarwinds
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 )
-
-func toJsonNoEscape(t interface{}) ([]byte, error) {
-	buffer := &bytes.Buffer{}
-	encoder := json.NewEncoder(buffer)
-	encoder.SetEscapeHTML(false)
-	err := encoder.Encode(t)
-	return buffer.Bytes(), err
-}
 
 func retrieveCookie(resp *http.Response, name string) (string, error) {
 	if cookies := resp.Header[headerNameSetCookie]; cookies != nil {
