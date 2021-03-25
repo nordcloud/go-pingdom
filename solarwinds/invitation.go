@@ -6,8 +6,12 @@ const (
 	inviteUserResponseType = "createOrganizationInvitation"
 
 	revokeInvitationOp           = "deleteOrganizationInvitationMutation"
-	revokeInvitationQuery        = "mutation deleteOrganizationInvitationMutation($email: ID!) {\\n  deleteOrganizationInvitation(email: $email) {\\n    success\\n    code\\n    message\\n    __typename\\n  }\\n}\\n"
+	revokeInvitationQuery        = "mutation deleteOrganizationInvitationMutation($email: ID!) {\n  deleteOrganizationInvitation(email: $email) {\n    success\n    code\n    message\n    __typename\n  }\n}\n"
 	revokeInvitationResponseType = "deleteOrganizationInvitation"
+
+	resendInvitationOp           = "resendOrganizationInvitationMutation"
+	resendInvitationQuery        = "mutation resendOrganizationInvitationMutation($email: ID!) {\n  resendOrganizationInvitation(email: $email) {\n    success\n    code\n    message\n    __typename\n  }\n}\n"
+	resendInvitationResponseType = "resendOrganizationInvitation"
 )
 
 type Invitation struct {
@@ -21,6 +25,10 @@ type inviteUserVars struct {
 }
 
 type revokeInvitationVars struct {
+	Email string `json:"email"`
+}
+
+type resendInvitationVars struct {
 	Email string `json:"email"`
 }
 
@@ -49,6 +57,19 @@ func (is *InvitationService) RevokePendingInvitation(email string) error {
 			Email: email,
 		},
 		ResponseType: revokeInvitationResponseType,
+	}
+	_, err := is.client.MakeGraphQLRequest(&req)
+	return err
+}
+
+func (is *InvitationService) ResendInvitation(email string) error {
+	req := GraphQLRequest{
+		OperationName: resendInvitationOp,
+		Query:         resendInvitationQuery,
+		Variables: resendInvitationVars{
+			Email: email,
+		},
+		ResponseType: resendInvitationResponseType,
 	}
 	_, err := is.client.MakeGraphQLRequest(&req)
 	return err

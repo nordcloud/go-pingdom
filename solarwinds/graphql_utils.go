@@ -2,6 +2,7 @@ package solarwinds
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 )
 
@@ -19,7 +20,11 @@ func NewGraphQLResponse(body io.Reader, key string) (*GraphQLResponse, error) {
 	if err := json.NewDecoder(body).Decode(&root); err != nil {
 		return nil, err
 	}
-	data := root["data"].(map[string]interface{})
+	data, ok := root["data"].(map[string]interface{})
+	if !ok {
+		body, _ := json.Marshal(root)
+		return nil, fmt.Errorf("request failed with response: %v", string(body))
+	}
 	graphQLResp := GraphQLResponse{}
 	for k, v := range data[key].(map[string]interface{}) {
 		graphQLResp[k] = v

@@ -95,3 +95,38 @@ func TestRevokePendingInvitation(t *testing.T) {
 	err := client.InvitationService.RevokePendingInvitation(email)
 	assert.NoError(t, err)
 }
+
+func TestResendInvitation(t *testing.T) {
+	setup()
+	defer teardown()
+
+	email := RandString(8) + "@foo.com"
+	variables := resendInvitationVars{
+		Email: email,
+	}
+	mux.HandleFunc(graphQLEndpoint, func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		graphQLReq := GraphQLRequest{}
+		json.NewDecoder(r.Body).Decode(&graphQLReq)
+		assert.Equal(t, resendInvitationOp, graphQLReq.OperationName)
+		assert.Equal(t, resendInvitationQuery, graphQLReq.Query)
+		actualVars := resendInvitationVars{}
+		_ = Convert(&graphQLReq.Variables, &actualVars)
+		assert.Equal(t, variables, actualVars)
+
+		fmt.Fprintf(w, `
+{
+  "data": {
+    "resendOrganizationInvitation": {
+      "success": true,
+      "code": "200",
+      "message": "",
+      "__typename": "MutationResponse"
+    }
+  }
+}
+`)
+	})
+	err := client.InvitationService.ResendInvitation(email)
+	assert.NoError(t, err)
+}

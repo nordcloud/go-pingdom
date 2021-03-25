@@ -27,12 +27,14 @@ func init() {
 	}
 }
 
-func TestInviteUser(t *testing.T) {
+func TestInvitations(t *testing.T) {
 	if !runSolarwindsAcceptance {
 		t.Skip()
 	}
-	err := solarwindsClient.InvitationService.InviteUser(&solarwinds.Invitation{
-		Email: solarwinds.RandString(10) + "@foo.com",
+	email := solarwinds.RandString(10) + "@foo.com"
+	invitationService := solarwindsClient.InvitationService
+	err := invitationService.InviteUser(&solarwinds.Invitation{
+		Email: email,
 		Role:  "MEMBER",
 		Products: []solarwinds.ProductSetting{
 			{
@@ -42,4 +44,13 @@ func TestInviteUser(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
+
+	err = invitationService.ResendInvitation(email)
+	assert.NoError(t, err)
+
+	err = invitationService.RevokePendingInvitation(email)
+	assert.NoError(t, err)
+
+	err = invitationService.ResendInvitation(email)
+	assert.Error(t, err)
 }
