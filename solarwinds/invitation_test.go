@@ -15,7 +15,7 @@ func TestInviteUser(t *testing.T) {
 	invitation := Invitation{
 		Email: RandString(8) + "@foo.com",
 		Role:  "Member",
-		Products: []ProductSetting{
+		Products: []Product{
 			{
 				Name: "AppOptics",
 				Role: "Admin",

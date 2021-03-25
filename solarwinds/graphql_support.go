@@ -33,9 +33,17 @@ func NewGraphQLResponse(body io.Reader, key string) (*GraphQLResponse, error) {
 }
 
 func (r GraphQLResponse) isSuccess() bool {
-	return r["success"].(bool)
+	if success, ok := r["success"]; ok {
+		return success.(bool)
+	} else {
+		return true
+	}
 }
 
 func (r GraphQLResponse) message() string {
-	return r["message"].(string)
+	if msg, ok := r["message"]; ok {
+		return msg.(string)
+	} else {
+		return ""
+	}
 }

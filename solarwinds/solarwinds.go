@@ -28,6 +28,7 @@ type Client struct {
 	client            *http.Client
 	baseURL           string
 	InvitationService *InvitationService
+	UserService       *UserService
 }
 
 type ClientConfig struct {
@@ -36,7 +37,13 @@ type ClientConfig struct {
 	BaseURL  string
 }
 
-type ProductSetting struct {
+type Product struct {
+	Name   string `json:"name"`
+	Access bool   `json:"access"`
+	Role   string `json:"role"`
+}
+
+type ProductUpdate struct {
 	Name string `json:"name"`
 	Role string `json:"role"`
 }
@@ -70,6 +77,7 @@ func NewClient(config ClientConfig) (*Client, error) {
 	}
 	c.client = http.DefaultClient
 	c.InvitationService = &InvitationService{client: c}
+	c.UserService = &UserService{client: c}
 	return c, nil
 }
 

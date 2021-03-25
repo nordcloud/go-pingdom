@@ -29,7 +29,6 @@ func RandString(n int) string {
 	return string(b)
 }
 
-// For testing purpose only.
 func Convert(from interface{}, to interface{}) error {
 	b, err := toJsonNoEscape(from)
 	if err != nil {
