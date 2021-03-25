@@ -106,9 +106,9 @@ func TestObtainSwiSettings(t *testing.T) {
 	setup()
 	defer teardown()
 	swiSettings := RandString(10)
-	mux.HandleFunc("/home", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/common/login", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add(headerNameSetCookie, fmt.Sprintf("%v=%v", cookieNameSwiSettings, swiSettings)+"; Path=/; Expires=Tue, 06 Apr 2021 11:14:34 GMT; HttpOnly; Secure; SameSite=None")
-		fmt.Fprint(w, `The request body does not matter`)
+		http.Redirect(w, r, "/foo", http.StatusFound)
 	})
 	err := client.obtainSwiSettings()
 	assert.NoError(t, err)

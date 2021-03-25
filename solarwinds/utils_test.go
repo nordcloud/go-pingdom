@@ -1,9 +1,29 @@
 package solarwinds
 
 import (
+	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
+
+func TestTaggedFields(t *testing.T) {
+	type Foo struct {
+		Name              string `json:"name"`
+		NotTagged         string
+		ExplicitlyIgnored string `json:"-"`
+		notExported       string
+	}
+
+	foo := Foo{
+		Name:              "foo",
+		NotTagged:         "not tagged",
+		ExplicitlyIgnored: "asdf",
+		notExported:       "not exported",
+	}
+	b, err := json.Marshal(foo)
+	assert.NoError(t, err)
+	assert.Equal(t, `{"name":"foo","NotTagged":"not tagged"}`, string(b))
+}
 
 func TestToJsonNoEscape(t *testing.T) {
 	obj := map[string]interface{}{

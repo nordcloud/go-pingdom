@@ -36,7 +36,7 @@ func TestInvitations(t *testing.T) {
 	err := invitationService.InviteUser(&solarwinds.Invitation{
 		Email: email,
 		Role:  "MEMBER",
-		Products: []solarwinds.Product{
+		Products: []solarwinds.ProductUpdate{
 			{
 				Name: "APPOPTICS",
 				Role: "MEMBER",

@@ -15,9 +15,9 @@ const (
 )
 
 type Invitation struct {
-	Email    string    `json:"email"`
-	Role     string    `json:"role"`
-	Products []Product `json:"products"`
+	Email    string          `json:"email"`
+	Role     string          `json:"role"`
+	Products []ProductUpdate `json:"products"`
 }
 
 type inviteUserVars struct {
