@@ -33,7 +33,7 @@ func TestInvitations(t *testing.T) {
 	}
 	email := solarwinds.RandString(10) + "@foo.com"
 	invitationService := solarwindsClient.InvitationService
-	err := invitationService.InviteUser(&solarwinds.Invitation{
+	err := invitationService.Create(&solarwinds.Invitation{
 		Email: email,
 		Role:  "MEMBER",
 		Products: []solarwinds.ProductUpdate{
@@ -45,13 +45,17 @@ func TestInvitations(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	err = invitationService.ResendInvitation(email)
+	invitationList, err := invitationService.List()
+	assert.NoError(t, err)
+	assert.True(t, len(invitationList.Organization.Invitations) > 0)
+
+	err = invitationService.Resend(email)
 	assert.NoError(t, err)
 
-	err = invitationService.RevokePendingInvitation(email)
+	err = invitationService.Revoke(email)
 	assert.NoError(t, err)
 
-	err = invitationService.ResendInvitation(email)
+	err = invitationService.Resend(email)
 	assert.Error(t, err)
 }
 

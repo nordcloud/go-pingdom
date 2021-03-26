@@ -57,7 +57,7 @@ func TestInviteUser(t *testing.T) {
 }
 `)
 	})
-	err := client.InvitationService.InviteUser(&invitation)
+	err := client.InvitationService.Create(&invitation)
 	assert.NoError(t, err)
 }
 
@@ -92,7 +92,7 @@ func TestRevokePendingInvitation(t *testing.T) {
 }
 `)
 	})
-	err := client.InvitationService.RevokePendingInvitation(email)
+	err := client.InvitationService.Revoke(email)
 	assert.NoError(t, err)
 }
 
@@ -127,6 +127,67 @@ func TestResendInvitation(t *testing.T) {
 }
 `)
 	})
-	err := client.InvitationService.ResendInvitation(email)
+	err := client.InvitationService.Resend(email)
 	assert.NoError(t, err)
+}
+
+func TestListInvitation(t *testing.T) {
+	setup()
+	defer teardown()
+
+	mux.HandleFunc(graphQLEndpoint, func(w http.ResponseWriter, r *http.Request) {
+		graphQLReq := GraphQLRequest{}
+		json.NewDecoder(r.Body).Decode(&graphQLReq)
+		assert.Equal(t, listInvitationOp, graphQLReq.OperationName)
+		assert.Equal(t, listInvitationQuery, graphQLReq.Query)
+
+		fmt.Fprintf(w, `
+{
+  "data": {
+    "user": {
+      "id": "106586091288584192",
+      "currentOrganization": {
+        "id": "106269109693582336",
+        "invitations": [
+          {
+            "email": "5et54o0OtS@foo.com",
+            "role": "MEMBER",
+            "date": "2021-03-25T02:36:48Z",
+            "products": [
+              {
+                "name": "APPOPTICS",
+                "role": "MEMBER",
+                "access": true,
+                "__typename": "ProductAccess"
+              }
+            ],
+            "__typename": "OrganizationInvitation"
+          },
+          {
+            "email": "0JTELJv5YA@foo.com",
+            "role": "MEMBER",
+            "date": "2021-03-25T02:37:25Z",
+            "products": [
+              {
+                "name": "APPOPTICS",
+                "role": "MEMBER",
+                "access": true,
+                "__typename": "ProductAccess"
+              }
+            ],
+            "__typename": "OrganizationInvitation"
+          }
+        ],
+        "__typename": "Organization"
+      },
+      "__typename": "AuthenticatedUser"
+    }
+  }
+}
+`)
+	})
+	invitationList, err := client.InvitationService.List()
+	assert.NoError(t, err)
+	invitations := invitationList.Organization.Invitations
+	assert.Equal(t, len(invitations), 2)
 }

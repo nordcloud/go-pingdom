@@ -13,12 +13,26 @@ const (
 	resendInvitationOp           = "resendOrganizationInvitationMutation"
 	resendInvitationQuery        = "mutation resendOrganizationInvitationMutation($email: ID!) {\n  resendOrganizationInvitation(email: $email) {\n    success\n    code\n    message\n    __typename\n  }\n}\n"
 	resendInvitationResponseType = "resendOrganizationInvitation"
+
+	listInvitationOp           = "getInvitationsQuery"
+	listInvitationQuery        = "query getInvitationsQuery {\n  user {\n    id\n    currentOrganization {\n      id\n      invitations {\n        email\n        role\n        date\n        products {\n          name\n          role\n          access\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
+	listInvitationResponseType = "user"
 )
 
 type Invitation struct {
 	Email    string          `json:"email"`
 	Role     string          `json:"role"`
 	Products []ProductUpdate `json:"products"`
+}
+
+type InvitationList struct {
+	OwnerUserId  string                      `json:"id"`
+	Organization OrganizationWithInvitations `json:"currentOrganization"`
+}
+
+type OrganizationWithInvitations struct {
+	Id          string       `json:"id"`
+	Invitations []Invitation `json:"invitations"`
 }
 
 type InvitationService struct {
@@ -37,7 +51,7 @@ type resendInvitationVars struct {
 	Email string `json:"email"`
 }
 
-func (is *InvitationService) InviteUser(user *Invitation) error {
+func (is *InvitationService) Create(user *Invitation) error {
 	req := GraphQLRequest{
 		OperationName: inviteUserOp,
 		Query:         inviteUserQuery,
@@ -50,7 +64,7 @@ func (is *InvitationService) InviteUser(user *Invitation) error {
 	return err
 }
 
-func (is *InvitationService) RevokePendingInvitation(email string) error {
+func (is *InvitationService) Revoke(email string) error {
 	req := GraphQLRequest{
 		OperationName: revokeInvitationOp,
 		Query:         revokeInvitationQuery,
@@ -63,7 +77,7 @@ func (is *InvitationService) RevokePendingInvitation(email string) error {
 	return err
 }
 
-func (is *InvitationService) ResendInvitation(email string) error {
+func (is *InvitationService) Resend(email string) error {
 	req := GraphQLRequest{
 		OperationName: resendInvitationOp,
 		Query:         resendInvitationQuery,
@@ -74,4 +88,21 @@ func (is *InvitationService) ResendInvitation(email string) error {
 	}
 	_, err := is.client.MakeGraphQLRequest(&req)
 	return err
+}
+
+func (is *InvitationService) List() (*InvitationList, error) {
+	req := GraphQLRequest{
+		OperationName: listInvitationOp,
+		Query:         listInvitationQuery,
+		ResponseType:  listInvitationResponseType,
+	}
+	resp, err := is.client.MakeGraphQLRequest(&req)
+	if err != nil {
+		return nil, err
+	}
+	invitationList := InvitationList{}
+	if err := Convert(&resp, &invitationList); err != nil {
+		return nil, err
+	}
+	return &invitationList, nil
 }
