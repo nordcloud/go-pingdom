@@ -1,5 +1,6 @@
 package solarwinds
 
+// Constant values used in GraphQL requests.
 const (
 	inviteUserOp           = "createOrganizationAdminMutation"
 	inviteUserQuery        = "mutation createOrganizationAdminMutation($input: CreateOrganizationInvitationInput!) {\n  createOrganizationInvitation(input: $input) {\n    success\n    code\n    message\n    invitation {\n      email\n      role\n      __typename\n    }\n    __typename\n  }\n}\n"
@@ -20,6 +21,10 @@ type Invitation struct {
 	Products []ProductUpdate `json:"products"`
 }
 
+type InvitationService struct {
+	client *Client
+}
+
 type inviteUserVars struct {
 	Input Invitation `json:"input"`
 }
@@ -30,10 +35,6 @@ type revokeInvitationVars struct {
 
 type resendInvitationVars struct {
 	Email string `json:"email"`
-}
-
-type InvitationService struct {
-	client *Client
 }
 
 func (is *InvitationService) InviteUser(user *Invitation) error {

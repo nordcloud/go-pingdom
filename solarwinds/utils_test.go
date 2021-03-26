@@ -30,7 +30,7 @@ func TestToJsonNoEscape(t *testing.T) {
 		"url":     "https://foo.bar.com?name=a&value=b",
 		"content": "<html>response body</html>",
 	}
-	b, err := toJsonNoEscape(obj)
+	b, err := ToJsonNoEscape(obj)
 	assert.NoError(t, err)
 	assert.Equal(t, `{"content":"<html>response body</html>","url":"https://foo.bar.com?name=a&value=b"}`+"\n", string(b))
 }

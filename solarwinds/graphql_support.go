@@ -10,7 +10,7 @@ type GraphQLRequest struct {
 	OperationName string      `json:"operationName"`
 	Variables     interface{} `json:"variables"`
 	Query         string      `json:"query"`
-	ResponseType  string      `json:"-"`
+	ResponseType  string      `json:"-"` // Not required by GraphQL schema
 }
 
 type GraphQLResponse map[string]interface{}

@@ -32,9 +32,9 @@ type Client struct {
 }
 
 type ClientConfig struct {
-	Username string
+	Username string // Typically this is an email
 	Password string
-	BaseURL  string
+	BaseURL  string // For UT
 }
 
 type Product struct {
@@ -43,6 +43,7 @@ type Product struct {
 	Role   string `json:"role"`
 }
 
+// Unfortunately Access is not required here.
 type ProductUpdate struct {
 	Name string `json:"name"`
 	Role string `json:"role"`
@@ -59,6 +60,7 @@ type loginResult struct {
 	RedirectUrl string
 }
 
+// Does not involve any network interactions.
 func NewClient(config ClientConfig) (*Client, error) {
 	var baseURLToUse *url.URL
 	var err error
@@ -115,7 +117,7 @@ func (c *Client) NewRequest(method string, rsc string, params io.Reader) (*http.
 }
 
 func (c *Client) MakeGraphQLRequest(graphQLRequest *GraphQLRequest) (*GraphQLResponse, error) {
-	body, err := toJsonNoEscape(graphQLRequest)
+	body, err := ToJsonNoEscape(graphQLRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -138,6 +140,8 @@ func (c *Client) MakeGraphQLRequest(graphQLRequest *GraphQLRequest) (*GraphQLRes
 	return graphQLResp, err
 }
 
+// login provides user credentials and gets a 'swicus' value in return. This value serves
+// as a proof that one has been authenticated.
 func (c *Client) login() (*loginResult, error) {
 	params := map[string]string{
 		"response_type": "code",
@@ -155,7 +159,7 @@ func (c *Client) login() (*loginResult, error) {
 		Password:         c.password,
 		LoginQueryParams: paramsToUse.Encode(),
 	}
-	body, err := toJsonNoEscape(payload)
+	body, err := ToJsonNoEscape(payload)
 	if err != nil {
 		return nil, err
 	}
@@ -185,6 +189,8 @@ func (c *Client) login() (*loginResult, error) {
 	return result, nil
 }
 
+// obtainSwiSettings is used to retrieve 'swi-settings' cookie. The value is contained
+// in a redirect response. This step does not depend on any previous steps.
 func (c *Client) obtainSwiSettings() error {
 	resp, err := http.Get(c.baseURL + "/common/login")
 	if err != nil {
@@ -198,6 +204,7 @@ func (c *Client) obtainSwiSettings() error {
 	return nil
 }
 
+// obtainToken uses the 'swicus' and 'swi-settings' to obtain a CSRF token.
 func (c *Client) obtainToken(auth *loginResult) error {
 	req, err := http.NewRequest("GET", c.baseURL+"/settings", nil)
 	if err != nil {

@@ -12,7 +12,7 @@ const (
 )
 
 // Note there will be a new line character at the end of the output.
-func toJsonNoEscape(t interface{}) ([]byte, error) {
+func ToJsonNoEscape(t interface{}) ([]byte, error) {
 	buffer := &bytes.Buffer{}
 	encoder := json.NewEncoder(buffer)
 	encoder.SetEscapeHTML(false)
@@ -20,6 +20,7 @@ func toJsonNoEscape(t interface{}) ([]byte, error) {
 	return buffer.Bytes(), err
 }
 
+// RandString returns random string at specified length.
 func RandString(n int) string {
 	rand.Seed(time.Now().UnixNano())
 	b := make([]byte, n)
@@ -29,8 +30,9 @@ func RandString(n int) string {
 	return string(b)
 }
 
+// Convert is typically used to convert map[string]interface{} to a struct in the same json structure.
 func Convert(from interface{}, to interface{}) error {
-	b, err := toJsonNoEscape(from)
+	b, err := ToJsonNoEscape(from)
 	if err != nil {
 		return err
 	}

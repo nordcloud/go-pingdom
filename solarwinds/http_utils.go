@@ -7,17 +7,14 @@ import (
 	"strings"
 )
 
+// retrieveCookie returns the cookie value by name from http.Response.
 func retrieveCookie(resp *http.Response, name string) (string, error) {
 	if cookies := resp.Header[headerNameSetCookie]; cookies != nil {
 		for _, cookie := range cookies {
-			if strings.Contains(cookie, name+"=") {
-				if parts := strings.Split(cookie, ";"); parts != nil {
-					for _, part := range parts {
-						if strings.HasPrefix(part, name) {
-							return strings.Split(part, "=")[1], nil
-						}
-					}
-				}
+			if strings.HasPrefix(cookie, name+"=") {
+				end := strings.Index(cookie, ";")
+				pair := cookie[:end]
+				return strings.Split(pair, "=")[1], nil
 			}
 		}
 		return "", fmt.Errorf("cookie '%v' does not exist in the response", name)
