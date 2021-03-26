@@ -1,4 +1,4 @@
-module github.com/chszchen-nordcloud/go-pingdom
+module github.com/nordcloud/go-pingdom
 
 go 1.15
 
