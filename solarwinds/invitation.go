@@ -20,9 +20,14 @@ const (
 )
 
 type Invitation struct {
-	Email    string          `json:"email"`
-	Role     string          `json:"role"`
-	Products []ProductUpdate `json:"products"`
+	Email    string    `json:"email"`
+	Role     string    `json:"role"`
+	Products []Product `json:"products"`
+}
+
+type Product struct {
+	Name string `json:"name"`
+	Role string `json:"role"`
 }
 
 type InvitationList struct {
@@ -51,12 +56,12 @@ type resendInvitationVars struct {
 	Email string `json:"email"`
 }
 
-func (is *InvitationService) Create(user *Invitation) error {
+func (is *InvitationService) Create(user Invitation) error {
 	req := GraphQLRequest{
 		OperationName: inviteUserOp,
 		Query:         inviteUserQuery,
 		Variables: inviteUserVars{
-			Input: *user,
+			Input: user,
 		},
 		ResponseType: inviteUserResponseType,
 	}

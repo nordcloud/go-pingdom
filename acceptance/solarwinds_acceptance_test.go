@@ -33,10 +33,10 @@ func TestInvitations(t *testing.T) {
 	}
 	email := solarwinds.RandString(10) + "@foo.com"
 	invitationService := solarwindsClient.InvitationService
-	err := invitationService.Create(&solarwinds.Invitation{
+	err := invitationService.Create(solarwinds.Invitation{
 		Email: email,
 		Role:  "MEMBER",
-		Products: []solarwinds.ProductUpdate{
+		Products: []solarwinds.Product{
 			{
 				Name: "APPOPTICS",
 				Role: "MEMBER",
@@ -59,12 +59,12 @@ func TestInvitations(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestUsers(t *testing.T) {
+func TestActiveUsers(t *testing.T) {
 	if !runSolarwindsAcceptance {
 		t.Skip()
 	}
 
-	userService := solarwindsClient.UserService
+	userService := solarwindsClient.ActiveUserService
 	currentUserEmail := os.Getenv("SOLARWINDS_USER")
 
 	userList, err := userService.List()
@@ -90,10 +90,10 @@ func TestUsers(t *testing.T) {
 		}
 		return false
 	}
-	updateAddRole := solarwinds.UpdateUserRequest{
+	updateAddRole := solarwinds.UpdateActiveUserRequest{
 		UserId: currentMember.User.Id,
 		Role:   currentMember.Role,
-		Products: []solarwinds.ProductUpdate{
+		Products: []solarwinds.Product{
 			{
 				Name: "LOGGLY",
 				Role: "MEMBER",
@@ -108,10 +108,10 @@ func TestUsers(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, containsRole(&singleUser.Organization.Members[0], "LOGGLY", "MEMBER"))
 
-	updateRevokeRole := solarwinds.UpdateUserRequest{
+	updateRevokeRole := solarwinds.UpdateActiveUserRequest{
 		UserId: currentMember.User.Id,
 		Role:   currentMember.Role,
-		Products: []solarwinds.ProductUpdate{
+		Products: []solarwinds.Product{
 			{
 				Name: "LOGGLY",
 				Role: "NO_ACCESS",
@@ -122,4 +122,48 @@ func TestUsers(t *testing.T) {
 	assert.NoError(t, err)
 	singleUser, _ = userService.Get(currentMember.User.Id)
 	assert.True(t, containsRole(&singleUser.Organization.Members[0], "LOGGLY", "NO_ACCESS"))
+}
+
+func TestUsers(t *testing.T) {
+	if !runSolarwindsAcceptance {
+		t.Skip()
+	}
+	email := solarwinds.RandString(10) + "@foo.com"
+	userToCreate := solarwinds.User{
+		Email: email,
+		Role:  "MEMBER",
+		Products: []solarwinds.Product{
+			{
+				Name: "APPOPTICS",
+				Role: "MEMBER",
+			},
+		},
+	}
+	userService := solarwindsClient.UserService
+	err := userService.Create(userToCreate)
+	assert.NoError(t, err)
+
+	user, err := userService.Retrieve(email)
+	assert.NoError(t, err)
+	assert.Equal(t, userToCreate, *user)
+
+	userUpdate := userToCreate
+	userUpdate.Products = []solarwinds.Product{
+		{
+			Name: "APPOPTICS",
+			Role: "ADMIN",
+		},
+	}
+	err = userService.Update(userUpdate)
+	assert.NoError(t, err)
+
+	userAfterUpdate, err := userService.Retrieve(email)
+	assert.NoError(t, err)
+	assert.Equal(t, userUpdate, *userAfterUpdate)
+
+	err = userService.Delete(email)
+	assert.NoError(t, err)
+
+	_, err = userService.Retrieve(email)
+	assert.Error(t, err)
 }

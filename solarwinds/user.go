@@ -1,101 +1,93 @@
 package solarwinds
 
-const (
-	listUserOp           = "getUsersQuery"
-	listUserQuery        = "query getUsersQuery {\n  user {\n    id\n    currentOrganization {\n      id\n      members {\n        user {\n          id\n          firstName\n          lastName\n          email\n          lastLogin\n          __typename\n        }\n        role\n        products {\n          name\n          access\n          role\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
-	listUserResponseType = "user"
-
-	getUserOp           = "getEditUserQuery"
-	getUserQuery        = "query getEditUserQuery($userId: String!) {\n  user {\n    id\n    currentOrganization {\n      id\n      members(filter: {id: $userId}) {\n        id\n        user {\n          email\n          __typename\n        }\n        role\n        products {\n          name\n          role\n          access\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
-	getUserResponseType = "user"
-
-	updateUserOp           = "updateMemberRolesMutation"
-	updateUserQuery        = "mutation updateMemberRolesMutation($userId: ID!, $role: OrganizationRole!, $products: [ProductAccessInput!]) {\n  updateMemberRoles(userId: $userId, input: {role: $role, products: $products}) {\n    code\n    success\n    message\n    __typename\n  }\n}\n"
-	updateUserResponseType = "updateMemberRoles"
+import (
+	"fmt"
+	"log"
 )
 
-type UpdateUserRequest struct {
-	UserId   string          `json:"userId"`
-	Role     string          `json:"role"`
-	Products []ProductUpdate `json:"products"`
-}
-
-type getUserVars struct {
-	UserId string `json:"userId"`
-}
-
-type UserList struct {
-	OwnerUserId  string       `json:"id"`
-	Organization Organization `json:"currentOrganization"`
-}
-
-type Organization struct {
-	Id      string               `json:"id"`
-	Members []OrganizationMember `json:"members"`
-}
-
-type OrganizationMember struct {
-	User     User      `json:"user"`
-	Role     string    `json:"role"`
-	Products []Product `json:"products"`
-}
-
-type User struct {
-	Id        string `json:"id"`
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	Email     string `json:"email"`
-	LastLogin string `json:"lastLogin"`
-}
+type User = Invitation
 
 type UserService struct {
-	client *Client
+	ActiveUserService *ActiveUserService
+	InvitationService *InvitationService
 }
 
-func (us *UserService) List() (*UserList, error) {
-	req := GraphQLRequest{
-		OperationName: listUserOp,
-		Query:         listUserQuery,
-		ResponseType:  listUserResponseType,
+// Create will create a new invitation for the user. It is not possible to add user without going through invitation.
+func (us *UserService) Create(user User) error {
+	return us.InvitationService.Create(user)
+}
+
+// Update will first try to update an active user with the given email. If no such user exist, will see if there
+// is an invitation with the email, if yes, will revoke the invitation and send a new one. Otherwise, error is returned.
+func (us *UserService) Update(update User) error {
+	activeUser, _ := us.ActiveUserService.GetByEmail(update.Email)
+	if activeUser != nil {
+		activeUserUpdate := UpdateActiveUserRequest{
+			UserId:   activeUser.User.Id,
+			Role:     update.Role,
+			Products: update.Products,
+		}
+		return us.ActiveUserService.Update(activeUserUpdate)
 	}
-	resp, err := us.client.MakeGraphQLRequest(&req)
+
+	log.Printf("Will revoke the invitation and send a new one for user: %v", update.Email)
+	invitationService := us.InvitationService
+	invitationList, err := invitationService.List()
+	if err != nil {
+		return err
+	}
+	var invitationFound bool
+	for _, invitation := range invitationList.Organization.Invitations {
+		if invitation.Email == update.Email {
+			invitationFound = true
+			if err = invitationService.Revoke(update.Email); err != nil {
+				return err
+			}
+		}
+	}
+	if !invitationFound {
+		return fmt.Errorf("there is no invitation with email: %v", update.Email)
+	}
+	if err = invitationService.Create(Invitation{
+		Email:    update.Email,
+		Role:     update.Role,
+		Products: update.Products,
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Delete will only be effective if it is an invitation. There is no way to delete an active user in Pingdom.
+func (us *UserService) Delete(email string) error {
+	activeUser, _ := us.ActiveUserService.GetByEmail(email)
+	if activeUser != nil {
+		log.Printf("It is not possible to delete an active user.")
+		return nil
+	}
+	return us.InvitationService.Revoke(email)
+}
+
+// Retrieve return the user information, either it is an invitation or an active user.
+func (us *UserService) Retrieve(email string) (*User, error) {
+	activeUser, _ := us.ActiveUserService.GetByEmail(email)
+	if activeUser != nil {
+		user := User{
+			Email:    email,
+			Role:     activeUser.Role,
+			Products: activeUser.Products,
+		}
+		return &user, nil
+	}
+	log.Printf("user %v is not found in active user list, will look up in invitations", email)
+	invitationList, err := us.InvitationService.List()
 	if err != nil {
 		return nil, err
 	}
-	userList := UserList{}
-	if err := Convert(&resp, &userList); err != nil {
-		return nil, err
+	for _, invitation := range invitationList.Organization.Invitations {
+		if invitation.Email == email {
+			return &invitation, nil
+		}
 	}
-	return &userList, nil
-}
-
-func (us *UserService) Get(userId string) (*UserList, error) {
-	req := GraphQLRequest{
-		OperationName: getUserOp,
-		Query:         getUserQuery,
-		Variables: getUserVars{
-			UserId: userId,
-		},
-		ResponseType: getUserResponseType,
-	}
-	resp, err := us.client.MakeGraphQLRequest(&req)
-	if err != nil {
-		return nil, err
-	}
-	userList := UserList{}
-	if err := Convert(&resp, &userList); err != nil {
-		return nil, err
-	}
-	return &userList, nil
-}
-
-func (us *UserService) Update(update UpdateUserRequest) error {
-	req := GraphQLRequest{
-		OperationName: updateUserOp,
-		Query:         updateUserQuery,
-		Variables:     update,
-		ResponseType:  updateUserResponseType,
-	}
-	_, err := us.client.MakeGraphQLRequest(&req)
-	return err
+	return nil, fmt.Errorf("no user found with email: %v", email)
 }

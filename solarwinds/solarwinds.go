@@ -28,6 +28,7 @@ type Client struct {
 	client            *http.Client
 	baseURL           string
 	InvitationService *InvitationService
+	ActiveUserService *ActiveUserService
 	UserService       *UserService
 }
 
@@ -35,18 +36,6 @@ type ClientConfig struct {
 	Username string // Typically this is an email
 	Password string
 	BaseURL  string // For UT
-}
-
-type Product struct {
-	Name   string `json:"name"`
-	Access bool   `json:"access"`
-	Role   string `json:"role"`
-}
-
-// Unfortunately Access is not required here.
-type ProductUpdate struct {
-	Name string `json:"name"`
-	Role string `json:"role"`
 }
 
 type loginPayload struct {
@@ -79,7 +68,11 @@ func NewClient(config ClientConfig) (*Client, error) {
 	}
 	c.client = http.DefaultClient
 	c.InvitationService = &InvitationService{client: c}
-	c.UserService = &UserService{client: c}
+	c.ActiveUserService = &ActiveUserService{client: c}
+	c.UserService = &UserService{
+		ActiveUserService: c.ActiveUserService,
+		InvitationService: c.InvitationService,
+	}
 	return c, nil
 }
 

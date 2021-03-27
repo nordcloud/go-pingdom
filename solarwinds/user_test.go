@@ -8,182 +8,90 @@ import (
 	"testing"
 )
 
-func TestListUsers(t *testing.T) {
+// TODO: These values are from the mock response strings. Ideally they should be randomly generated on each test run.
+const (
+	activeUserEmail   = "foo@nordcloud.com"
+	activeUserId      = "23285292452068352"
+	nonExistUserEmail = "other@nordcloud.com"
+	pendingUserEmail  = "5et54o0OtS@foo.com"
+)
+
+func TestRetrieveUser(t *testing.T) {
 	setup()
 	defer teardown()
 
 	mux.HandleFunc(graphQLEndpoint, func(w http.ResponseWriter, r *http.Request) {
 		graphQLReq := GraphQLRequest{}
 		json.NewDecoder(r.Body).Decode(&graphQLReq)
-		assert.Equal(t, listUserOp, graphQLReq.OperationName)
-		assert.Equal(t, listUserQuery, graphQLReq.Query)
 
-		fmt.Fprintf(w, `
-{
-  "data": {
-    "user": {
-      "id": "106586091288584192",
-      "currentOrganization": {
-        "id": "106269109693582336",
-        "members": [
-          {
-            "user": {
-              "id": "23285292452068352",
-              "firstName": "IT",
-              "lastName": "Nordcloud",
-              "email": "robert.kubis@nordcloud.com",
-              "lastLogin": "2021-03-23T07:17:48Z",
-              "__typename": "User"
-            },
-            "role": "ADMIN",
-            "products": [
-              {
-                "name": "APPOPTICS",
-                "access": false,
-                "role": "NO_ACCESS",
-                "__typename": "ProductAccess"
-              },
-              {
-                "name": "LOGGLY",
-                "access": false,
-                "role": "NO_ACCESS",
-                "__typename": "ProductAccess"
-              },
-              {
-                "name": "PINGDOM",
-                "access": true,
-                "role": "ADMIN",
-                "__typename": "ProductAccess"
-              }
-            ],
-            "__typename": "OrganizationMember"
-          },
-          {
-            "user": {
-              "id": "74914272581727232",
-              "firstName": "Nordcloud",
-              "lastName": "MC-Tooling",
-              "email": "mc.tooling@nordcloud.com",
-              "lastLogin": "2021-03-24T23:04:56Z",
-              "__typename": "User"
-            },
-            "role": "ADMIN",
-            "products": [
-              {
-                "name": "APPOPTICS",
-                "access": false,
-                "role": "NO_ACCESS",
-                "__typename": "ProductAccess"
-              },
-              {
-                "name": "LOGGLY",
-                "access": false,
-                "role": "NO_ACCESS",
-                "__typename": "ProductAccess"
-              },
-              {
-                "name": "PINGDOM",
-                "access": false,
-                "role": "NO_ACCESS",
-                "__typename": "ProductAccess"
-              }
-            ],
-            "__typename": "OrganizationMember"
-          }
-        ],
-        "__typename": "Organization"
-      },
-      "__typename": "AuthenticatedUser"
-    }
-  }
-}
-`)
+		var responseStr string
+		switch graphQLReq.OperationName {
+		case listActiveUserOp:
+			responseStr = listActiveUserResponseStr
+		case listInvitationOp:
+			responseStr = listInvitationResponseStr
+		default:
+			panic("not supposed to reach here")
+		}
+		fmt.Fprintf(w, responseStr)
 	})
-	userList, err := client.UserService.List()
+	userService := client.UserService
+	user, err := userService.Retrieve(activeUserEmail)
 	assert.NoError(t, err)
-	members := userList.Organization.Members
-	assert.Equal(t, "106586091288584192", userList.OwnerUserId)
-	assert.Equal(t, len(members), 2)
+	assert.NotNil(t, user)
+
+	user, err = userService.Retrieve(nonExistUserEmail)
+	assert.Error(t, err)
+
+	user, err = userService.Retrieve(pendingUserEmail)
+	assert.NoError(t, err)
+	assert.NotNil(t, user)
 }
 
-func TestGetUser(t *testing.T) {
+func TestCreateUser(t *testing.T) {
 	setup()
 	defer teardown()
 
-	userId := "106586091288584192"
-	input := getUserVars{
-		UserId: userId,
+	invitation := Invitation{
+		Email: RandString(8) + "@foo.com",
+		Role:  "Member",
+		Products: []Product{
+			{
+				Name: "AppOptics",
+				Role: "Admin",
+			},
+			{
+				Name: "Loggly",
+				Role: "User",
+			},
+		},
+	}
+	input := inviteUserVars{
+		Input: invitation,
 	}
 	mux.HandleFunc(graphQLEndpoint, func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		graphQLReq := GraphQLRequest{}
 		json.NewDecoder(r.Body).Decode(&graphQLReq)
-		assert.Equal(t, getUserOp, graphQLReq.OperationName)
-		assert.Equal(t, getUserQuery, graphQLReq.Query)
-		actualVars := getUserVars{}
+		assert.Equal(t, inviteUserOp, graphQLReq.OperationName)
+		assert.Equal(t, inviteUserQuery, graphQLReq.Query)
+		actualVars := inviteUserVars{}
 		_ = Convert(&graphQLReq.Variables, &actualVars)
 		assert.Equal(t, input, actualVars)
-		fmt.Fprintf(w, `
-{
-  "data": {
-    "user": {
-      "id": "106586091288584192",
-      "currentOrganization": {
-        "id": "106269109693582336",
-        "members": [
-          {
-            "id": "106586091288584192",
-            "user": {
-              "email": "chszchen@nordcloud.com",
-              "__typename": "User"
-            },
-            "role": "ADMIN",
-            "products": [
-              {
-                "name": "APPOPTICS",
-                "role": "MEMBER",
-                "access": true,
-                "__typename": "ProductAccess"
-              },
-              {
-                "name": "LOGGLY",
-                "role": "NO_ACCESS",
-                "access": false,
-                "__typename": "ProductAccess"
-              },
-              {
-                "name": "PINGDOM",
-                "role": "ADMIN",
-                "access": true,
-                "__typename": "ProductAccess"
-              }
-            ],
-            "__typename": "OrganizationMember"
-          }
-        ],
-        "__typename": "Organization"
-      },
-      "__typename": "AuthenticatedUser"
-    }
-  }
-}
-`)
+
+		fmt.Fprintf(w, inviteUserResponseStr)
 	})
-	userList, err := client.UserService.Get("106586091288584192")
+	err := client.UserService.Create(invitation)
 	assert.NoError(t, err)
-	members := userList.Organization.Members
-	assert.Equal(t, len(members), 1)
-	member := members[0]
-	assert.Equal(t, "chszchen@nordcloud.com", member.User.Email)
 }
 
 func TestUpdateUser(t *testing.T) {
 	setup()
 	defer teardown()
 
-	update := UpdateUserRequest{
-		UserId: "106586091288584192",
-		Role:   "ADMIN",
-		Products: []ProductUpdate{
+	update := User{
+		Role: "ADMIN",
+		Products: []Product{
 			{
 				Name: "APPOPTICS",
 				Role: "MEMBER",
@@ -193,24 +101,85 @@ func TestUpdateUser(t *testing.T) {
 	mux.HandleFunc(graphQLEndpoint, func(w http.ResponseWriter, r *http.Request) {
 		graphQLReq := GraphQLRequest{}
 		json.NewDecoder(r.Body).Decode(&graphQLReq)
-		assert.Equal(t, updateUserOp, graphQLReq.OperationName)
-		assert.Equal(t, updateUserQuery, graphQLReq.Query)
-		actualVars := UpdateUserRequest{}
-		_ = Convert(&graphQLReq.Variables, &actualVars)
-		assert.Equal(t, update, actualVars)
-		fmt.Fprintf(w, `
+
+		switch graphQLReq.OperationName {
+		case listActiveUserOp:
+			fmt.Fprintf(w, listActiveUserResponseStr)
+		case updateActiveUserOp:
+			assert.Equal(t, updateActiveUserQuery, graphQLReq.Query)
+			actualVars := UpdateActiveUserRequest{}
+			_ = Convert(&graphQLReq.Variables, &actualVars)
+			assert.Equal(t, activeUserId, actualVars.UserId)
+			fmt.Fprintf(w, updateActiveUserResponseStr)
+		case revokeInvitationOp:
+			fmt.Fprintf(w, revokePendingInvitationResponseStr)
+		case inviteUserOp:
+			fmt.Fprintf(w, inviteUserResponseStr)
+		case listInvitationOp:
+			fmt.Fprintf(w, listInvitationResponseStr)
+		default:
+			t.Errorf("should not have op: %v", graphQLReq.OperationName)
+		}
+	})
+
+	userService := client.UserService
+	update.Email = activeUserEmail
+	err := userService.Update(update)
+	assert.NoError(t, err)
+
+	update.Email = nonExistUserEmail
+	err = userService.Update(update)
+	assert.Error(t, err)
+
+	update.Email = pendingUserEmail
+	err = userService.Update(update)
+	assert.NoError(t, err)
+}
+
+func TestDeleteUser(t *testing.T) {
+	setup()
+	defer teardown()
+
+	mux.HandleFunc(graphQLEndpoint, func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		graphQLReq := GraphQLRequest{}
+		json.NewDecoder(r.Body).Decode(&graphQLReq)
+
+		switch graphQLReq.OperationName {
+		case revokeInvitationOp:
+			assert.Equal(t, revokeInvitationQuery, graphQLReq.Query)
+			actualVars := revokeInvitationVars{}
+			_ = Convert(&graphQLReq.Variables, &actualVars)
+			if actualVars.Email == pendingUserEmail {
+				fmt.Fprintf(w, revokePendingInvitationResponseStr)
+			} else {
+				fmt.Fprintf(w, `
 {
   "data": {
-    "updateMemberRoles": {
-      "code": "200",
-      "success": true,
-      "message": "",
-      "__typename": "UpdateMemberRolesResponse"
+    "deleteOrganizationInvitation": {
+      "success": false,
+      "code": "500",
+      "message": "user not exist",
+      "__typename": "MutationResponse"
     }
   }
 }
 `)
+			}
+		case listActiveUserOp:
+			fmt.Fprintf(w, listActiveUserResponseStr)
+		default:
+			t.Errorf("should not have op: %v", graphQLReq.OperationName)
+		}
 	})
-	err := client.UserService.Update(update)
+
+	userService := client.UserService
+	err := userService.Delete(pendingUserEmail)
 	assert.NoError(t, err)
+
+	err = userService.Delete(activeUserEmail)
+	assert.NoError(t, err)
+
+	err = userService.Delete(nonExistUserEmail)
+	assert.Error(t, err)
 }
