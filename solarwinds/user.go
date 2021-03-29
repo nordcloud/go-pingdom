@@ -62,8 +62,7 @@ func (us *UserService) Update(update User) error {
 func (us *UserService) Delete(email string) error {
 	activeUser, _ := us.ActiveUserService.GetByEmail(email)
 	if activeUser != nil {
-		log.Printf("It is not possible to delete an active user.")
-		return nil
+		return NewErrorAttemptDeleteActiveUser(email)
 	}
 	return us.InvitationService.Revoke(email)
 }
