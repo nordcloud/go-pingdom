@@ -92,10 +92,10 @@ func TestLogin(t *testing.T) {
 		state := r.URL.Query()["state"]
 		w.Header().Add(headerNameSetCookie, "Swicus-auth=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Secure")
 		w.Header().Add(headerNameSetCookie, fmt.Sprintf("%v=%v", cookieNameSwicus, swicus)+"; Path=/; Expires=Tue, 06 Apr 2021 09:18:16 GMT; Max-Age=1209600; HttpOnly; Secure; SameSite=None")
-		_, _ = fmt.Fprint(w, fmt.Sprintf(
+		body := fmt.Sprintf(
 			`{"RedirectUrl": "https://my.solarwinds.cloud/common/auth/callback?code=txsXjr18udIjF4sdy6fG2fqqHlTK9qY7ePtDppVJiP0.Wb8vBKTZYhdo8GrQBC_-a5nLmDP2thYzsCvkeAfUhS8&scope=openid+Swicus&state=%s"}`,
-			state),
-		)
+			state)
+		_, _ = fmt.Fprint(w, body)
 	})
 	result, err := client.login()
 	assert.NoError(t, err)
