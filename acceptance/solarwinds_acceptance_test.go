@@ -76,52 +76,54 @@ func TestActiveUsers(t *testing.T) {
 			break
 		}
 	}
-	assert.True(t, currentMember != nil)
+	if currentMember == nil {
+		t.Errorf("current member is nil")
+	} else {
+		singleUser, err := userService.Get(currentMember.User.Id)
+		assert.NoError(t, err)
+		assert.Equal(t, currentMember.User.Email, singleUser.Organization.Members[0].User.Email)
 
-	singleUser, err := userService.Get(currentMember.User.Id)
-	assert.NoError(t, err)
-	assert.Equal(t, currentMember.User.Email, singleUser.Organization.Members[0].User.Email)
-
-	containsRole := func(member *solarwinds.OrganizationMember, app string, role string) bool {
-		for _, product := range member.Products {
-			if product.Name == app && product.Role == role {
-				return true
+		containsRole := func(member *solarwinds.OrganizationMember, app string, role string) bool {
+			for _, product := range member.Products {
+				if product.Name == app && product.Role == role {
+					return true
+				}
 			}
+			return false
 		}
-		return false
-	}
-	updateAddRole := solarwinds.UpdateActiveUserRequest{
-		UserId: currentMember.User.Id,
-		Role:   currentMember.Role,
-		Products: []solarwinds.Product{
-			{
-				Name: "LOGGLY",
-				Role: "MEMBER",
+		updateAddRole := solarwinds.UpdateActiveUserRequest{
+			UserId: currentMember.User.Id,
+			Role:   currentMember.Role,
+			Products: []solarwinds.Product{
+				{
+					Name: "LOGGLY",
+					Role: "MEMBER",
+				},
 			},
-		},
-	}
-	assert.True(t, containsRole(currentMember, "LOGGLY", "NO_ACCESS"))
-	err = userService.Update(updateAddRole)
-	assert.NoError(t, err)
+		}
+		assert.True(t, containsRole(currentMember, "LOGGLY", "NO_ACCESS"))
+		err = userService.Update(updateAddRole)
+		assert.NoError(t, err)
 
-	singleUser, err = userService.Get(currentMember.User.Id)
-	assert.NoError(t, err)
-	assert.True(t, containsRole(&singleUser.Organization.Members[0], "LOGGLY", "MEMBER"))
+		singleUser, err = userService.Get(currentMember.User.Id)
+		assert.NoError(t, err)
+		assert.True(t, containsRole(&singleUser.Organization.Members[0], "LOGGLY", "MEMBER"))
 
-	updateRevokeRole := solarwinds.UpdateActiveUserRequest{
-		UserId: currentMember.User.Id,
-		Role:   currentMember.Role,
-		Products: []solarwinds.Product{
-			{
-				Name: "LOGGLY",
-				Role: "NO_ACCESS",
+		updateRevokeRole := solarwinds.UpdateActiveUserRequest{
+			UserId: currentMember.User.Id,
+			Role:   currentMember.Role,
+			Products: []solarwinds.Product{
+				{
+					Name: "LOGGLY",
+					Role: "NO_ACCESS",
+				},
 			},
-		},
+		}
+		err = userService.Update(updateRevokeRole)
+		assert.NoError(t, err)
+		singleUser, _ = userService.Get(currentMember.User.Id)
+		assert.True(t, containsRole(&singleUser.Organization.Members[0], "LOGGLY", "NO_ACCESS"))
 	}
-	err = userService.Update(updateRevokeRole)
-	assert.NoError(t, err)
-	singleUser, _ = userService.Get(currentMember.User.Id)
-	assert.True(t, containsRole(&singleUser.Organization.Members[0], "LOGGLY", "NO_ACCESS"))
 }
 
 func TestUsers(t *testing.T) {

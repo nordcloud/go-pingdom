@@ -22,7 +22,7 @@ func TestRetrieveUser(t *testing.T) {
 
 	mux.HandleFunc(graphQLEndpoint, func(w http.ResponseWriter, r *http.Request) {
 		graphQLReq := GraphQLRequest{}
-		json.NewDecoder(r.Body).Decode(&graphQLReq)
+		_ = json.NewDecoder(r.Body).Decode(&graphQLReq)
 
 		var responseStr string
 		switch graphQLReq.OperationName {
@@ -33,7 +33,7 @@ func TestRetrieveUser(t *testing.T) {
 		default:
 			panic("not supposed to reach here")
 		}
-		fmt.Fprintf(w, responseStr)
+		_, _ = fmt.Fprint(w, responseStr)
 	})
 	userService := client.UserService
 	user, err := userService.Retrieve(activeUserEmail)
@@ -71,16 +71,15 @@ func TestCreateUser(t *testing.T) {
 		Input: invitation,
 	}
 	mux.HandleFunc(graphQLEndpoint, func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
 		graphQLReq := GraphQLRequest{}
-		json.NewDecoder(r.Body).Decode(&graphQLReq)
+		_ = json.NewDecoder(r.Body).Decode(&graphQLReq)
 		assert.Equal(t, inviteUserOp, graphQLReq.OperationName)
 		assert.Equal(t, inviteUserQuery, graphQLReq.Query)
 		actualVars := inviteUserVars{}
 		_ = Convert(&graphQLReq.Variables, &actualVars)
 		assert.Equal(t, input, actualVars)
 
-		fmt.Fprintf(w, inviteUserResponseStr)
+		_, _ = fmt.Fprint(w, inviteUserResponseStr)
 	})
 	err := client.UserService.Create(invitation)
 	assert.NoError(t, err)
@@ -101,23 +100,23 @@ func TestUpdateUser(t *testing.T) {
 	}
 	mux.HandleFunc(graphQLEndpoint, func(w http.ResponseWriter, r *http.Request) {
 		graphQLReq := GraphQLRequest{}
-		json.NewDecoder(r.Body).Decode(&graphQLReq)
+		_ = json.NewDecoder(r.Body).Decode(&graphQLReq)
 
 		switch graphQLReq.OperationName {
 		case listActiveUserOp:
-			fmt.Fprintf(w, listActiveUserResponseStr)
+			_, _ = fmt.Fprint(w, listActiveUserResponseStr)
 		case updateActiveUserOp:
 			assert.Equal(t, updateActiveUserQuery, graphQLReq.Query)
 			actualVars := UpdateActiveUserRequest{}
 			_ = Convert(&graphQLReq.Variables, &actualVars)
 			assert.Equal(t, activeUserId, actualVars.UserId)
-			fmt.Fprintf(w, updateActiveUserResponseStr)
+			_, _ = fmt.Fprint(w, updateActiveUserResponseStr)
 		case revokeInvitationOp:
-			fmt.Fprintf(w, revokePendingInvitationResponseStr)
+			_, _ = fmt.Fprint(w, revokePendingInvitationResponseStr)
 		case inviteUserOp:
-			fmt.Fprintf(w, inviteUserResponseStr)
+			_, _ = fmt.Fprint(w, inviteUserResponseStr)
 		case listInvitationOp:
-			fmt.Fprintf(w, listInvitationResponseStr)
+			_, _ = fmt.Fprint(w, listInvitationResponseStr)
 		default:
 			t.Errorf("should not have op: %v", graphQLReq.OperationName)
 		}
@@ -142,9 +141,8 @@ func TestDeleteUser(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc(graphQLEndpoint, func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
 		graphQLReq := GraphQLRequest{}
-		json.NewDecoder(r.Body).Decode(&graphQLReq)
+		_ = json.NewDecoder(r.Body).Decode(&graphQLReq)
 
 		switch graphQLReq.OperationName {
 		case revokeInvitationOp:
@@ -152,9 +150,9 @@ func TestDeleteUser(t *testing.T) {
 			actualVars := revokeInvitationVars{}
 			_ = Convert(&graphQLReq.Variables, &actualVars)
 			if actualVars.Email == pendingUserEmail {
-				fmt.Fprintf(w, revokePendingInvitationResponseStr)
+				_, _ = fmt.Fprint(w, revokePendingInvitationResponseStr)
 			} else {
-				fmt.Fprintf(w, `
+				_, _ = fmt.Fprint(w, `
 {
   "data": {
     "deleteOrganizationInvitation": {
@@ -168,7 +166,7 @@ func TestDeleteUser(t *testing.T) {
 `)
 			}
 		case listActiveUserOp:
-			fmt.Fprintf(w, listActiveUserResponseStr)
+			_, _ = fmt.Fprint(w, listActiveUserResponseStr)
 		default:
 			t.Errorf("should not have op: %v", graphQLReq.OperationName)
 		}

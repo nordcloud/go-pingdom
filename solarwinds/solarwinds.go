@@ -166,7 +166,7 @@ func (c *Client) login() (*loginResult, error) {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf("visit callback failed, status %v", resp.StatusCode))
+		return nil, fmt.Errorf("visit callback failed, status %v", resp.StatusCode)
 	}
 	defer resp.Body.Close()
 	result := &loginResult{}

@@ -120,14 +120,14 @@ func TestInviteUser(t *testing.T) {
 	mux.HandleFunc(graphQLEndpoint, func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		graphQLReq := GraphQLRequest{}
-		json.NewDecoder(r.Body).Decode(&graphQLReq)
+		_ = json.NewDecoder(r.Body).Decode(&graphQLReq)
 		assert.Equal(t, inviteUserOp, graphQLReq.OperationName)
 		assert.Equal(t, inviteUserQuery, graphQLReq.Query)
 		actualVars := inviteUserVars{}
 		_ = Convert(&graphQLReq.Variables, &actualVars)
 		assert.Equal(t, input, actualVars)
 
-		fmt.Fprintf(w, inviteUserResponseStr)
+		_, _ = fmt.Fprint(w, inviteUserResponseStr)
 	})
 	err := client.InvitationService.Create(invitation)
 	assert.NoError(t, err)
@@ -144,14 +144,14 @@ func TestRevokePendingInvitation(t *testing.T) {
 	mux.HandleFunc(graphQLEndpoint, func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		graphQLReq := GraphQLRequest{}
-		json.NewDecoder(r.Body).Decode(&graphQLReq)
+		_ = json.NewDecoder(r.Body).Decode(&graphQLReq)
 		assert.Equal(t, revokeInvitationOp, graphQLReq.OperationName)
 		assert.Equal(t, revokeInvitationQuery, graphQLReq.Query)
 		actualVars := revokeInvitationVars{}
 		_ = Convert(&graphQLReq.Variables, &actualVars)
 		assert.Equal(t, variables, actualVars)
 
-		fmt.Fprintf(w, revokePendingInvitationResponseStr)
+		_, _ = fmt.Fprint(w, revokePendingInvitationResponseStr)
 	})
 	err := client.InvitationService.Revoke(email)
 	assert.NoError(t, err)
@@ -166,16 +166,15 @@ func TestResendInvitation(t *testing.T) {
 		Email: email,
 	}
 	mux.HandleFunc(graphQLEndpoint, func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
 		graphQLReq := GraphQLRequest{}
-		json.NewDecoder(r.Body).Decode(&graphQLReq)
+		_ = json.NewDecoder(r.Body).Decode(&graphQLReq)
 		assert.Equal(t, resendInvitationOp, graphQLReq.OperationName)
 		assert.Equal(t, resendInvitationQuery, graphQLReq.Query)
 		actualVars := resendInvitationVars{}
 		_ = Convert(&graphQLReq.Variables, &actualVars)
 		assert.Equal(t, variables, actualVars)
 
-		fmt.Fprintf(w, resendInvitationResponseStr)
+		_, _ = fmt.Fprint(w, resendInvitationResponseStr)
 	})
 	err := client.InvitationService.Resend(email)
 	assert.NoError(t, err)
@@ -187,11 +186,11 @@ func TestListInvitation(t *testing.T) {
 
 	mux.HandleFunc(graphQLEndpoint, func(w http.ResponseWriter, r *http.Request) {
 		graphQLReq := GraphQLRequest{}
-		json.NewDecoder(r.Body).Decode(&graphQLReq)
+		_ = json.NewDecoder(r.Body).Decode(&graphQLReq)
 		assert.Equal(t, listInvitationOp, graphQLReq.OperationName)
 		assert.Equal(t, listInvitationQuery, graphQLReq.Query)
 
-		fmt.Fprintf(w, listInvitationResponseStr)
+		_, _ = fmt.Fprint(w, listInvitationResponseStr)
 	})
 	invitationList, err := client.InvitationService.List()
 	assert.NoError(t, err)

@@ -154,11 +154,11 @@ func TestListActiveUsers(t *testing.T) {
 
 	mux.HandleFunc(graphQLEndpoint, func(w http.ResponseWriter, r *http.Request) {
 		graphQLReq := GraphQLRequest{}
-		json.NewDecoder(r.Body).Decode(&graphQLReq)
+		_ = json.NewDecoder(r.Body).Decode(&graphQLReq)
 		assert.Equal(t, listActiveUserOp, graphQLReq.OperationName)
 		assert.Equal(t, listActiveUserQuery, graphQLReq.Query)
 
-		fmt.Fprintf(w, listActiveUserResponseStr)
+		_, _ = fmt.Fprint(w, listActiveUserResponseStr)
 	})
 	userList, err := client.ActiveUserService.List()
 	assert.NoError(t, err)
@@ -181,13 +181,13 @@ func TestGetActiveUser(t *testing.T) {
 	}
 	mux.HandleFunc(graphQLEndpoint, func(w http.ResponseWriter, r *http.Request) {
 		graphQLReq := GraphQLRequest{}
-		json.NewDecoder(r.Body).Decode(&graphQLReq)
+		_ = json.NewDecoder(r.Body).Decode(&graphQLReq)
 		assert.Equal(t, getActiveUserOp, graphQLReq.OperationName)
 		assert.Equal(t, getActiveUserQuery, graphQLReq.Query)
 		actualVars := getActiveUserVars{}
 		_ = Convert(&graphQLReq.Variables, &actualVars)
 		assert.Equal(t, input, actualVars)
-		fmt.Fprintf(w, getActiveUserResponseStr)
+		_, _ = fmt.Fprint(w, getActiveUserResponseStr)
 	})
 	userList, err := client.ActiveUserService.Get("106586091288584192")
 	assert.NoError(t, err)
@@ -213,13 +213,13 @@ func TestUpdateActiveUser(t *testing.T) {
 	}
 	mux.HandleFunc(graphQLEndpoint, func(w http.ResponseWriter, r *http.Request) {
 		graphQLReq := GraphQLRequest{}
-		json.NewDecoder(r.Body).Decode(&graphQLReq)
+		_ = json.NewDecoder(r.Body).Decode(&graphQLReq)
 		assert.Equal(t, updateActiveUserOp, graphQLReq.OperationName)
 		assert.Equal(t, updateActiveUserQuery, graphQLReq.Query)
 		actualVars := UpdateActiveUserRequest{}
 		_ = Convert(&graphQLReq.Variables, &actualVars)
 		assert.Equal(t, update, actualVars)
-		fmt.Fprintf(w, updateActiveUserResponseStr)
+		_, _ = fmt.Fprint(w, updateActiveUserResponseStr)
 	})
 	err := client.ActiveUserService.Update(update)
 	assert.NoError(t, err)
