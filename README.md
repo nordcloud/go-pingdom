@@ -77,6 +77,18 @@ check, err := client.Checks.Create(&newCheck)
 fmt.Println("Created check:", check) // {ID, Name}
 ```
 
+Create a new DNS check:
+```go
+newCheck := pingdom.DNSCheck{
+    Name: "fake check",
+    Hostname: "example.com",
+    ExpectedIP: "192.168.1.1",
+    NameServer: "8.8.8.8",
+}
+check, err := client.Checks.Create(&newCheck)
+fmt.Println("Created check:", check) // {ID, Name}
+```
+
 Get details for a specific check:
 
 ```go
