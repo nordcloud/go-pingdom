@@ -357,7 +357,7 @@ err := client.UserService.Update(update)
 ```
 
 Delete an user. It is not possible to delete an active user in Solarwinds. If it is an active user, the function will
-return without error, but no user will be deleted. If the it is an invitation, the invitation will be revoked.
+return error with proper status code set, no user will be deleted. If it is an invitation, the invitation will be revoked.
 
 ```go
 email = "somebody@nordcloud.com"
