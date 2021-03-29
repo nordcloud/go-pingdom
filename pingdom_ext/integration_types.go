@@ -1,6 +1,7 @@
 package pingdom_ext
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 )
@@ -16,6 +17,7 @@ type WebHookData struct {
 	Url  string `json:"url"`
 }
 
+/*
 type LibratoIntegration struct {
 	Active     bool         `json:"active"`
 	ProviderId int          `json:"provider_id"`
@@ -27,10 +29,11 @@ type LibratoData struct {
 	Email    string `json:"email"`
 	ApiToken string `json:"apiToken"`
 }
+*/
 
 // PostParams returns a map of parameters for an WebHook integration that can be sent along.
 func (wi *WebHookIntegration) PostParams() map[string]string {
-	dataJson, err := toJsonNoEscape(wi.UserData)
+	dataJson, err := json.Marshal(wi.UserData)
 	fmt.Println(err)
 	m := map[string]string{
 		"active":      strconv.FormatBool(wi.Active),
@@ -44,7 +47,7 @@ func (wi *WebHookIntegration) PostParams() map[string]string {
 // used to guard against sending illegal values to the Pingdom API.
 func (wi *WebHookIntegration) Valid() error {
 	if wi.ProviderId != 1 && wi.ProviderId != 2 {
-		return fmt.Errorf("Invalid value for `provider`.  Must contain available provider")
+		return fmt.Errorf("Invalid value for `provider`.  Must contain available provider id")
 	}
 	if wi.UserData.Name == "" {
 		return fmt.Errorf("Invalid value for `name`.  Must contain non-empty string")
@@ -54,6 +57,8 @@ func (wi *WebHookIntegration) Valid() error {
 	}
 	return nil
 }
+
+/*
 
 // PostParams returns a map of parameters for an Librato integration that can be sent along.
 func (li *LibratoIntegration) PostParams() map[string]string {
@@ -84,3 +89,5 @@ func (li *LibratoIntegration) Valid() error {
 	}
 	return nil
 }
+
+*/

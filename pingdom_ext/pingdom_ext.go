@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 )
 
 const (
@@ -49,6 +48,7 @@ type authResult struct {
 func NewClientWithConfig(config ClientConfig) (*Client, error) {
 	var baseURL *url.URL
 	var err error
+	var jwtToken *string
 	if config.BaseURL == "" {
 		config.BaseURL = defaultBaseURL
 	}
@@ -87,30 +87,38 @@ func NewClientWithConfig(config ClientConfig) (*Client, error) {
 	}
 
 	c.client = config.HTTPClient
-	c.JWTToken, err = obtainToken(config)
+	jwtToken, err = obtainToken(config)
+	if err != nil {
+		return nil, err
+	}
+
+	c.JWTToken = *jwtToken
 
 	c.Integrations = &IntegrationService{client: c}
 
 	return c, nil
 }
 
-func obtainToken(config ClientConfig) (string, error) {
+func obtainToken(config ClientConfig) (*string, error) {
 	stateURL, err := url.Parse(config.BaseURL + "/auth/login?")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	stateReq, err := http.NewRequest("GET", stateURL.String(), nil)
 	stateResp, err := config.HTTPClient.Do(stateReq)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
+	defer stateResp.Body.Close()
+
 	location, err := stateResp.Location()
+	fmt.Println(location)
 
 	sessionCookie, err := getCookie(stateResp, "pingdom_login_session_id")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	authPayload := authPayload{
@@ -119,9 +127,9 @@ func obtainToken(config ClientConfig) (string, error) {
 		LoginQueryParams: location.Query().Encode(),
 	}
 
-	authBody, err := toJsonNoEscape(authPayload)
+	authBody, err := json.Marshal(authPayload)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	authReq, err := http.NewRequest("POST", config.AuthURL, bytes.NewReader(authBody))
@@ -129,8 +137,10 @@ func obtainToken(config ClientConfig) (string, error) {
 
 	authResp, err := config.HTTPClient.Do(authReq)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+	defer authResp.Body.Close()
+
 	bodyBytes, _ := ioutil.ReadAll(authResp.Body)
 	bodyString := string(bodyBytes)
 
@@ -138,22 +148,27 @@ func obtainToken(config ClientConfig) (string, error) {
 	err1 := json.Unmarshal([]byte(bodyString), &authRespJson)
 
 	if err1 != nil {
-		return "", err1
+		return nil, err1
 	}
+	fmt.Println(authRespJson.RedirectUrl)
 
-	tokenReq, err := http.NewRequest("GET", authRespJson.RedirectUrl, nil)
+	redirectUrl, err := url.Parse(authRespJson.RedirectUrl)
+
+	tokenReq, err := http.NewRequest("GET", config.BaseURL+"/auth/swicus/callback?"+redirectUrl.Query().Encode(), nil)
 	tokenReq.AddCookie(sessionCookie)
 	tokenResp, err := config.HTTPClient.Do(tokenReq)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+	defer tokenResp.Body.Close()
 
 	jwtCookie, err := getCookie(tokenResp, "jwt")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+	fmt.Println(jwtCookie.Value)
 
-	return jwtCookie.Value, err
+	return &jwtCookie.Value, err
 }
 
 // NewRequest makes a new HTTP Request.  The method param should be an HTTP method in
@@ -184,26 +199,6 @@ func (pc *Client) NewRequest(method string, rsc string, params map[string]string
 	return req, err
 }
 
-// NewJSONRequest makes a new HTTP Request.  The method param should be an HTTP method in
-// all caps such as GET, POST, PUT, DELETE.  The rsc param should correspond with
-// a restful resource.  Params should be a json formatted string.
-func (pc *Client) NewJSONRequest(method string, rsc string, params string) (*http.Request, error) {
-	baseURL, err := url.Parse(pc.BaseURL.String() + rsc)
-	if err != nil {
-		return nil, err
-	}
-
-	reqBody := strings.NewReader(params)
-
-	req, err := http.NewRequest(method, baseURL.String(), reqBody)
-	req.AddCookie(&http.Cookie{
-		Name:  "jwt",
-		Value: pc.JWTToken,
-	})
-	req.Header.Add("Content-Type", "application/json")
-	return req, err
-}
-
 // Do makes an HTTP request and will unmarshal the JSON response in to the
 // passed in interface.  If the HTTP response is outside of the 2xx range the
 // response will be returned along with the error.
@@ -230,6 +225,7 @@ func decodeResponse(r *http.Response, v interface{}) error {
 
 	bodyBytes, _ := ioutil.ReadAll(r.Body)
 	bodyString := string(bodyBytes)
+	fmt.Println(bodyString)
 	err := json.Unmarshal([]byte(bodyString), &v)
 	return err
 }
@@ -251,14 +247,6 @@ func validateResponse(r *http.Response) error {
 	}
 
 	return m.Error
-}
-
-func toJsonNoEscape(t interface{}) ([]byte, error) {
-	buffer := &bytes.Buffer{}
-	encoder := json.NewEncoder(buffer)
-	encoder.SetEscapeHTML(false)
-	err := encoder.Encode(t)
-	return buffer.Bytes(), err
 }
 
 func getCookie(resp *http.Response, name string) (*http.Cookie, error) {

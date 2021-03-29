@@ -15,10 +15,11 @@ var client_ext *pingdom_ext.Client
 var runExtAcceptance bool
 
 func init() {
-	if os.Getenv("PINGDOM_ACCEPTANCE") == "1" {
+	if os.Getenv("PINGDOM_EXT_ACCEPTANCE") == "1" {
 		runExtAcceptance = true
 
 		config := pingdom_ext.ClientConfig{
+
 			HTTPClient: &http.Client{
 				Timeout: time.Second * 10,
 				CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -49,6 +50,7 @@ func TestIntegrations(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, createMsg)
 	assert.NotEmpty(t, createMsg)
+	assert.True(t, createMsg.Status)
 
 	integrationID := createMsg.ID
 
@@ -71,9 +73,11 @@ func TestIntegrations(t *testing.T) {
 	updateMsg, err := client_ext.Integrations.Update(integrationID, &integration)
 	assert.NoError(t, err)
 	assert.NotNil(t, updateMsg)
+	assert.True(t, updateMsg.Status)
 
 	delMsg, err := client_ext.Integrations.Delete(integrationID)
 	assert.NoError(t, err)
 	assert.NotNil(t, delMsg)
+	assert.True(t, delMsg.Status)
 
 }

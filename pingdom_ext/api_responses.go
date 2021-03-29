@@ -23,7 +23,7 @@ type integrationJSONResponse struct {
 // Integration Get Response
 type IntegrationGetResponse struct {
 	NumberOfConnectedChecks int               `json:"number_of_connected_checks"`
-	Id                      int               `json:"id"`
+	ID                      int               `json:"id"`
 	Name                    string            `json:"name"`
 	Description             string            `json:"description"`
 	ProviderId              int               `json:"provider_id"`

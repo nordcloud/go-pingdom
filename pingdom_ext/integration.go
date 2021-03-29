@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"strconv"
-
-	"github.com/nordcloud/go-pingdom/pingdom"
 )
 
 // IntegrationService provides an interface to Pingdom integration management.
@@ -20,16 +18,9 @@ type Integration interface {
 }
 
 // List returns the response holding a list of Integration.
-func (cs *IntegrationService) List(params ...map[string]string) ([]IntegrationGetResponse, error) {
-	param := map[string]string{}
-	if len(params) != 0 {
-		for _, m := range params {
-			for k, v := range m {
-				param[k] = v
-			}
-		}
-	}
-	req, err := cs.client.NewRequest("GET", "/data/v3/integration", param)
+func (cs *IntegrationService) List() ([]IntegrationGetResponse, error) {
+
+	req, err := cs.client.NewRequest("GET", "/data/v3/integration", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -108,16 +99,16 @@ func (cs *IntegrationService) Update(id int, integration Integration) (*Integrat
 }
 
 // Delete will delete the Integration for the given ID.
-func (cs *IntegrationService) Delete(id int) (*pingdom.PingdomResponse, error) {
+func (cs *IntegrationService) Delete(id int) (*IntegrationStatus, error) {
 	req, err := cs.client.NewRequest("DELETE", "/data/v3/integration/"+strconv.Itoa(id), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	m := &pingdom.PingdomResponse{}
+	m := &integrationJSONResponse{}
 	_, err = cs.client.Do(req, m)
 	if err != nil {
 		return nil, err
 	}
-	return m, err
+	return m.IntegrationStatus, err
 }

@@ -1,184 +1,133 @@
 package pingdom_ext
 
 import (
+	"fmt"
+	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
-	"reflect"
+	"strings"
 	"testing"
+
+	"github.com/nordcloud/go-pingdom/pingdom"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestNewClientWithConfig(t *testing.T) {
-	type args struct {
-		config ClientConfig
+var (
+	mux     *http.ServeMux
+	client  *Client
+	server  *httptest.Server
+	baseUrl string
+)
+
+func setup() {
+	// test server
+	mux = http.NewServeMux()
+	server = httptest.NewServer(mux)
+	// test client
+	client = &Client{
+		JWTToken: "my_jwt_token",
+		client: &http.Client{
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		},
+		Integrations: nil,
 	}
-	tests := []struct {
-		name    string
-		args    args
-		want    *Client
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewClientWithConfig(tt.args.config)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("NewClientWithConfig() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewClientWithConfig() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	client.Integrations = &IntegrationService{client: client}
+
+	url, _ := url.Parse(server.URL)
+	client.BaseURL = url
 }
 
-func Test_obtainToken(t *testing.T) {
-	type args struct {
-		config ClientConfig
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    string
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := obtainToken(tt.args.config)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("obtainToken() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("obtainToken() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+func teardown() {
+	server.Close()
+}
+
+func TestNewClientWithConfig(t *testing.T) {
+	setup()
+	defer teardown()
+
+	mux.HandleFunc("/auth/login", func(w http.ResponseWriter, r *http.Request) {
+		if m := "GET"; m != r.Method {
+			t.Errorf("Request method = %v, want %v", r.Method, m)
+		}
+		w.Header().Add("Set-Cookie", "pingdom_login_session_id=qw4us4Ed7aLSGugMRDHkqM9G6mwuKdn9Hz90r6IHhRc%3D; Path=/; HttpOnly; Secure")
+		w.Header().Add("Location", "https://my.solarwinds.cloud/login?response_type=code&scope=openid%20swicus&client_id=pingdom&state=htILEppzoMPtb6UjOdM98XPS3Mcwkr3Y&redirect_uri=https%3A%2F%2Fmy.pingdom.com%2Fauth%2Fswicus%2Fcallback")
+		_, _ = fmt.Fprintf(w, fmt.Sprintf("{}"))
+	})
+
+	mux.HandleFunc("/v1/login", func(w http.ResponseWriter, r *http.Request) {
+		if m := "POST"; m != r.Method {
+			t.Errorf("Request method = %v, want %v", r.Method, m)
+		}
+		_, _ = fmt.Fprintf(w, fmt.Sprintf(
+			`{"RedirectUrl": "https://my.pingdom.com/auth/swicus/callback?code=70kRkkAB7OIv5YYTPR6LpHH-2jMbtaDEHScLDw1amfw.baMoW3w-HkNXOj_I8pv580mRwBjIRVdFLW3cXFGRX9o&scope=openid+swicus&state=htILEppzoMPtb6UjOdM98XPS3Mcwkr3Y"}`),
+		)
+	})
+
+	mux.HandleFunc("/auth/swicus/callback", func(w http.ResponseWriter, r *http.Request) {
+		if m := "GET"; m != r.Method {
+			t.Errorf("Request method = %v, want %v", r.Method, m)
+		}
+		w.Header().Add("Set-Cookie", "jwt=my_test_token")
+		_, _ = fmt.Fprintf(w, fmt.Sprintf("{}"))
+	})
+
+	url, err := url.Parse(server.URL)
+	assert.NotEmpty(t, url)
+	assert.NoError(t, err)
+
+	c, err := NewClientWithConfig(ClientConfig{
+		Username: "test_user",
+		Password: "test_pwd",
+		BaseURL:  url.String(),
+		AuthURL:  url.String() + "/v1/login",
+		HTTPClient: &http.Client{
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, c.JWTToken, "my_test_token")
+	assert.NotNil(t, c.Integrations)
+
 }
 
 func TestClient_NewRequest(t *testing.T) {
-	type fields struct {
-		JWTToken     string
-		BaseURL      *url.URL
-		client       *http.Client
-		Integrations *IntegrationService
-	}
-	type args struct {
-		method string
-		rsc    string
-		params map[string]string
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *http.Request
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			pc := &Client{
-				JWTToken:     tt.fields.JWTToken,
-				BaseURL:      tt.fields.BaseURL,
-				client:       tt.fields.client,
-				Integrations: tt.fields.Integrations,
-			}
-			got, err := pc.NewRequest(tt.args.method, tt.args.rsc, tt.args.params)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Client.NewRequest() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Client.NewRequest() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
-func TestClient_NewJSONRequest(t *testing.T) {
-	type fields struct {
-		JWTToken     string
-		BaseURL      *url.URL
-		client       *http.Client
-		Integrations *IntegrationService
-	}
-	type args struct {
-		method string
-		rsc    string
-		params string
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *http.Request
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			pc := &Client{
-				JWTToken:     tt.fields.JWTToken,
-				BaseURL:      tt.fields.BaseURL,
-				client:       tt.fields.client,
-				Integrations: tt.fields.Integrations,
-			}
-			got, err := pc.NewJSONRequest(tt.args.method, tt.args.rsc, tt.args.params)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Client.NewJSONRequest() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Client.NewJSONRequest() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	setup()
+	defer teardown()
+
+	req, err := client.NewRequest("GET", "/data/v3/integration", nil)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "GET", req.Method)
+	assert.Equal(t, client.BaseURL.String()+"/data/v3/integration", req.URL.String())
 }
 
 func TestClient_Do(t *testing.T) {
-	type fields struct {
-		JWTToken     string
-		BaseURL      *url.URL
-		client       *http.Client
-		Integrations *IntegrationService
+	setup()
+	defer teardown()
+	type foo struct {
+		A string
 	}
-	type args struct {
-		req *http.Request
-		v   interface{}
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *http.Response
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			pc := &Client{
-				JWTToken:     tt.fields.JWTToken,
-				BaseURL:      tt.fields.BaseURL,
-				client:       tt.fields.client,
-				Integrations: tt.fields.Integrations,
-			}
-			got, err := pc.Do(tt.args.req, tt.args.v)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Client.Do() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Client.Do() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if m := "GET"; m != r.Method {
+			t.Errorf("Request method = %v, want %v", r.Method, m)
+		}
+		fmt.Fprint(w, `{"A":"a"}`)
+	})
+
+	req, _ := client.NewRequest("GET", "/", nil)
+	body := new(foo)
+	want := &foo{"a"}
+
+	_, err := client.Do(req, body)
+	assert.NoError(t, err)
+	assert.Equal(t, want, body)
 }
 
 func Test_decodeResponse(t *testing.T) {
@@ -191,7 +140,22 @@ func Test_decodeResponse(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "valid",
+			args: args{
+				r: &http.Response{
+					Body: ioutil.NopCloser(strings.NewReader(`
+					{
+						"integration": {
+							"status": true,
+							"id": 112396
+						}
+					}`)),
+				},
+				v: &integrationJSONResponse{},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -201,51 +165,29 @@ func Test_decodeResponse(t *testing.T) {
 		})
 	}
 }
+func TestValidateResponse(t *testing.T) {
+	valid := &http.Response{
+		Request:    &http.Request{},
+		StatusCode: http.StatusOK,
+		Body:       ioutil.NopCloser(strings.NewReader("OK")),
+	}
 
-func Test_validateResponse(t *testing.T) {
-	type args struct {
-		r *http.Response
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := validateResponse(tt.args.r); (err != nil) != tt.wantErr {
-				t.Errorf("validateResponse() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
+	assert.NoError(t, validateResponse(valid))
 
-func Test_toJsonNoEscape(t *testing.T) {
-	type args struct {
-		t interface{}
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    []byte
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := toJsonNoEscape(tt.args.t)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("toJsonNoEscape() error = %v, wantErr %v", err, tt.wantErr)
-				return
+	invalid := &http.Response{
+		Request:    &http.Request{},
+		StatusCode: http.StatusBadRequest,
+		Body: ioutil.NopCloser(strings.NewReader(`{
+			"error" : {
+				"statuscode": 400,
+				"statusdesc": "Bad Request",
+				"errormessage": "This is an error"
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("toJsonNoEscape() = %v, want %v", got, tt.want)
-			}
-		})
+		}`)),
 	}
+
+	want := &pingdom.PingdomError{400, "Bad Request", "This is an error"}
+	assert.Equal(t, want, validateResponse(invalid))
 }
 
 func Test_getCookie(t *testing.T) {
@@ -259,7 +201,36 @@ func Test_getCookie(t *testing.T) {
 		want    *http.Cookie
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "response with session cookie",
+			args: args{
+				name: "pingdom_login_session_id",
+				resp: &http.Response{
+					Header: http.Header{
+						"Set-Cookie": {"pingdom_login_session_id=xxxxxxx", "Path=/", "HttpOnly", "Secure"},
+					},
+				},
+			},
+			want: &http.Cookie{
+				Name:  "pingdom_login_session_id",
+				Value: "xxxxxxx",
+				Raw:   "pingdom_login_session=xxxxxxx",
+			},
+			wantErr: false,
+		},
+		{
+			name: "response without session cookie",
+			args: args{
+				name: "pingdom_login_session_id",
+				resp: &http.Response{
+					Header: http.Header{
+						"Set-Cookie": {"pingdom_login_session=xxxxxxx", "Path=/", "HttpOnly", "Secure"},
+					},
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -268,7 +239,7 @@ func Test_getCookie(t *testing.T) {
 				t.Errorf("getCookie() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
+			if got.String() != tt.want.String() {
 				t.Errorf("getCookie() = %v, want %v", got, tt.want)
 			}
 		})

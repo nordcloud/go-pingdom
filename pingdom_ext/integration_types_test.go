@@ -6,108 +6,100 @@ import (
 )
 
 func TestWebHookIntegration_PostParams(t *testing.T) {
-	type fields struct {
-		Active     bool
-		ProviderId int
-		UserData   *WebHookData
-	}
+
 	tests := []struct {
-		name   string
-		fields fields
-		want   map[string]string
+		name        string
+		integration WebHookIntegration
+		wantParams  map[string]string
 	}{
-		// TODO: Add test cases.
+		{
+			name: "parametrizes webhook integration",
+			integration: WebHookIntegration{
+				Active:     true,
+				ProviderId: 2,
+				UserData: &WebHookData{
+					Name: "wlwu-test-12",
+					Url:  "https://www.example.com",
+				},
+			},
+			wantParams: map[string]string{
+				"active":      "true",
+				"provider_id": "2",
+				"data_json":   `{"name":"wlwu-test-12","url":"https://www.example.com"}`,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wi := &WebHookIntegration{
-				Active:     tt.fields.Active,
-				ProviderId: tt.fields.ProviderId,
-				UserData:   tt.fields.UserData,
-			}
-			if got := wi.PostParams(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("WebHookIntegration.PostParams() = %v, want %v", got, tt.want)
+			if got := tt.integration.PostParams(); !reflect.DeepEqual(got, tt.wantParams) {
+				t.Errorf("WebHookIntegration.PostParams() = %v, want %v", got, tt.wantParams)
 			}
 		})
 	}
 }
 
 func TestWebHookIntegration_Valid(t *testing.T) {
-	type fields struct {
-		Active     bool
-		ProviderId int
-		UserData   *WebHookData
-	}
 	tests := []struct {
-		name    string
-		fields  fields
-		wantErr bool
+		name        string
+		integration WebHookIntegration
+		wantErr     bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "parametrizes webhook integration",
+			integration: WebHookIntegration{
+				Active:     true,
+				ProviderId: 2,
+				UserData: &WebHookData{
+					Name: "wlwu-test-12",
+					Url:  "https://www.example.com",
+				},
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "parametrizes webhook integration",
+			integration: WebHookIntegration{
+				Active:     false,
+				ProviderId: 3,
+				UserData: &WebHookData{
+					Name: "wlwu-test-12",
+					Url:  "https://www.example.com",
+				},
+			},
+			wantErr: true,
+		},
+
+		{
+			name: "parametrizes webhook integration",
+			integration: WebHookIntegration{
+				Active:     false,
+				ProviderId: 2,
+				UserData: &WebHookData{
+					Name: "",
+					Url:  "https://www.example.com",
+				},
+			},
+			wantErr: true,
+		},
+
+		{
+			name: "parametrizes webhook integration",
+			integration: WebHookIntegration{
+				Active:     false,
+				ProviderId: 2,
+				UserData: &WebHookData{
+					Name: "11111",
+					Url:  "",
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wi := &WebHookIntegration{
-				Active:     tt.fields.Active,
-				ProviderId: tt.fields.ProviderId,
-				UserData:   tt.fields.UserData,
-			}
-			if err := wi.Valid(); (err != nil) != tt.wantErr {
+			if err := tt.integration.Valid(); (err != nil) != tt.wantErr {
 				t.Errorf("WebHookIntegration.Valid() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestLibratoIntegration_PostParams(t *testing.T) {
-	type fields struct {
-		Active     bool
-		ProviderId int
-		UserData   *LibratoData
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   map[string]string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			li := &LibratoIntegration{
-				Active:     tt.fields.Active,
-				ProviderId: tt.fields.ProviderId,
-				UserData:   tt.fields.UserData,
-			}
-			if got := li.PostParams(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("LibratoIntegration.PostParams() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestLibratoIntegration_Valid(t *testing.T) {
-	type fields struct {
-		Active     bool
-		ProviderId int
-		UserData   *LibratoData
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			li := &LibratoIntegration{
-				Active:     tt.fields.Active,
-				ProviderId: tt.fields.ProviderId,
-				UserData:   tt.fields.UserData,
-			}
-			if err := li.Valid(); (err != nil) != tt.wantErr {
-				t.Errorf("LibratoIntegration.Valid() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
