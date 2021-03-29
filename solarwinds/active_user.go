@@ -1,7 +1,5 @@
 package solarwinds
 
-import "fmt"
-
 const (
 	listActiveUserOp           = "getUsersQuery"
 	listActiveUserQuery        = "query getUsersQuery {\n  user {\n    id\n    currentOrganization {\n      id\n      members {\n        user {\n          id\n          firstName\n          lastName\n          email\n          lastLogin\n          __typename\n        }\n        role\n        products {\n          name\n          access\n          role\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
@@ -108,10 +106,12 @@ func (us *ActiveUserService) GetByEmail(email string) (*OrganizationMember, erro
 	if err != nil {
 		return nil, err
 	}
+	var targetUser *OrganizationMember
 	for _, activeUser := range activeUserList.Organization.Members {
 		if activeUser.User.Email == email {
-			return &activeUser, nil
+			targetUser = &activeUser
+			break
 		}
 	}
-	return nil, fmt.Errorf("no active user found with email: %v", email)
+	return targetUser, nil
 }

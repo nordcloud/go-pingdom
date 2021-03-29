@@ -13,7 +13,7 @@ test:
 	go test -cover github.com/nordcloud/go-pingdom/pingdom
 
 acceptance:
-	PINGDOM_ACCEPTANCE=1 go test github.com/nordcloud/go-pingdom/acceptance
+	PINGDOM_ACCEPTANCE=1 SOLARWINDS_ACCEPTANCE=1 go test github.com/nordcloud/go-pingdom/acceptance
 
 cov:
 	go test github.com/nordcloud/go-pingdom/pingdom -coverprofile=coverage.out

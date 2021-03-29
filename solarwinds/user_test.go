@@ -41,7 +41,8 @@ func TestRetrieveUser(t *testing.T) {
 	assert.NotNil(t, user)
 
 	user, err = userService.Retrieve(nonExistUserEmail)
-	assert.Error(t, err)
+	assert.NoError(t, err)
+	assert.Nil(t, user)
 
 	user, err = userService.Retrieve(pendingUserEmail)
 	assert.NoError(t, err)

@@ -164,6 +164,7 @@ func TestUsers(t *testing.T) {
 	err = userService.Delete(email)
 	assert.NoError(t, err)
 
-	_, err = userService.Retrieve(email)
-	assert.Error(t, err)
+	userAfterDelete, err := userService.Retrieve(email)
+	assert.NoError(t, err)
+	assert.Nil(t, userAfterDelete)
 }

@@ -70,7 +70,10 @@ func (us *UserService) Delete(email string) error {
 
 // Retrieve return the user information, either it is an invitation or an active user.
 func (us *UserService) Retrieve(email string) (*User, error) {
-	activeUser, _ := us.ActiveUserService.GetByEmail(email)
+	activeUser, err := us.ActiveUserService.GetByEmail(email)
+	if err != nil {
+		return nil, err
+	}
 	if activeUser != nil {
 		user := User{
 			Email:    email,
@@ -79,15 +82,18 @@ func (us *UserService) Retrieve(email string) (*User, error) {
 		}
 		return &user, nil
 	}
+
 	log.Printf("user %v is not found in active user list, will look up in invitations", email)
 	invitationList, err := us.InvitationService.List()
 	if err != nil {
 		return nil, err
 	}
+	var targetInvitation *Invitation
 	for _, invitation := range invitationList.Organization.Invitations {
 		if invitation.Email == email {
-			return &invitation, nil
+			targetInvitation = &invitation
+			break
 		}
 	}
-	return nil, fmt.Errorf("no user found with email: %v", email)
+	return targetInvitation, nil
 }
