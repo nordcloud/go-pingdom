@@ -1,4 +1,4 @@
-package pingdom_ext
+package pingdomext
 
 import (
 	"reflect"
@@ -16,10 +16,10 @@ func TestWebHookIntegration_PostParams(t *testing.T) {
 			name: "parametrizes webhook integration",
 			integration: WebHookIntegration{
 				Active:     true,
-				ProviderId: 2,
+				ProviderID: 2,
 				UserData: &WebHookData{
 					Name: "wlwu-test-12",
-					Url:  "https://www.example.com",
+					URL:  "https://www.example.com",
 				},
 			},
 			wantParams: map[string]string{
@@ -48,10 +48,10 @@ func TestWebHookIntegration_Valid(t *testing.T) {
 			name: "parametrizes webhook integration",
 			integration: WebHookIntegration{
 				Active:     true,
-				ProviderId: 2,
+				ProviderID: 2,
 				UserData: &WebHookData{
 					Name: "wlwu-test-12",
-					Url:  "https://www.example.com",
+					URL:  "https://www.example.com",
 				},
 			},
 			wantErr: false,
@@ -61,10 +61,10 @@ func TestWebHookIntegration_Valid(t *testing.T) {
 			name: "parametrizes webhook integration",
 			integration: WebHookIntegration{
 				Active:     false,
-				ProviderId: 3,
+				ProviderID: 3,
 				UserData: &WebHookData{
 					Name: "wlwu-test-12",
-					Url:  "https://www.example.com",
+					URL:  "https://www.example.com",
 				},
 			},
 			wantErr: true,
@@ -74,10 +74,10 @@ func TestWebHookIntegration_Valid(t *testing.T) {
 			name: "parametrizes webhook integration",
 			integration: WebHookIntegration{
 				Active:     false,
-				ProviderId: 2,
+				ProviderID: 2,
 				UserData: &WebHookData{
 					Name: "",
-					Url:  "https://www.example.com",
+					URL:  "https://www.example.com",
 				},
 			},
 			wantErr: true,
@@ -87,10 +87,10 @@ func TestWebHookIntegration_Valid(t *testing.T) {
 			name: "parametrizes webhook integration",
 			integration: WebHookIntegration{
 				Active:     false,
-				ProviderId: 2,
+				ProviderID: 2,
 				UserData: &WebHookData{
 					Name: "11111",
-					Url:  "",
+					URL:  "",
 				},
 			},
 			wantErr: true,

@@ -1,4 +1,4 @@
-package pingdom_ext
+package pingdomext
 
 import (
 	"fmt"
@@ -14,10 +14,9 @@ import (
 )
 
 var (
-	mux     *http.ServeMux
-	client  *Client
-	server  *httptest.Server
-	baseUrl string
+	mux    *http.ServeMux
+	client *Client
+	server *httptest.Server
 )
 
 func setup() {

@@ -1,4 +1,4 @@
-package pingdom_ext
+package pingdomext
 
 import (
 	"encoding/json"
@@ -11,7 +11,8 @@ type IntegrationService struct {
 	client *Client
 }
 
-// IntegrationAPI is a Pingdom integration .
+// Integration is an interface representing a Pingdom integration.
+// Specific integration types should implement the methods of this interface.
 type Integration interface {
 	PostParams() map[string]string
 	Valid() error

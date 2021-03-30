@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nordcloud/go-pingdom/pingdom_ext"
+	"github.com/nordcloud/go-pingdom/pingdomext"
 	"github.com/stretchr/testify/assert"
 )
 
-var client_ext *pingdom_ext.Client
+var client_ext *pingdomext.Client
 
 var runExtAcceptance bool
 
@@ -18,7 +18,7 @@ func init() {
 	if os.Getenv("PINGDOM_EXT_ACCEPTANCE") == "1" {
 		runExtAcceptance = true
 
-		config := pingdom_ext.ClientConfig{
+		config := pingdomext.ClientConfig{
 
 			HTTPClient: &http.Client{
 				Timeout: time.Second * 10,
@@ -27,7 +27,7 @@ func init() {
 				},
 			},
 		}
-		client_ext, _ = pingdom_ext.NewClientWithConfig(config)
+		client_ext, _ = pingdomext.NewClientWithConfig(config)
 
 	}
 }
@@ -37,12 +37,12 @@ func TestIntegrations(t *testing.T) {
 		t.Skip()
 	}
 
-	integration := pingdom_ext.WebHookIntegration{
+	integration := pingdomext.WebHookIntegration{
 		Active:     false,
-		ProviderId: 2,
-		UserData: &pingdom_ext.WebHookData{
+		ProviderID: 2,
+		UserData: &pingdomext.WebHookData{
 			Name: "wlwu-tets-1",
-			Url:  "http://www.example.com",
+			URL:  "http://www.example.com",
 		},
 	}
 
@@ -68,7 +68,7 @@ func TestIntegrations(t *testing.T) {
 
 	integration.Active = true
 	integration.UserData.Name = "wlwu-tets-update"
-	integration.UserData.Url = "http://www.example1.com"
+	integration.UserData.URL = "http://www.example1.com"
 
 	updateMsg, err := client_ext.Integrations.Update(integrationID, &integration)
 	assert.NoError(t, err)

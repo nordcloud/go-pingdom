@@ -1,4 +1,4 @@
-package pingdom_ext
+package pingdomext
 
 import (
 	"fmt"
@@ -45,10 +45,10 @@ func TestIntegrationService_Create(t *testing.T) {
 			client: client,
 			integration: &WebHookIntegration{
 				Active:     false,
-				ProviderId: 2,
+				ProviderID: 2,
 				UserData: &WebHookData{
 					Name: "wlwu-test-5",
-					Url:  "http://www.example.org",
+					URL:  "http://www.example.org",
 				},
 			},
 			want:    &want,
@@ -164,7 +164,7 @@ func TestIntegrationService_List(t *testing.T) {
 			ID:                      112107,
 			Name:                    "webhook",
 			Description:             "Webhook",
-			ProviderId:              2,
+			ProviderID:              2,
 			ActivatedAt:             1615819798,
 			CreatedAt:               1615819798,
 			UserData: map[string]string{
@@ -177,7 +177,7 @@ func TestIntegrationService_List(t *testing.T) {
 			ID:                      112165,
 			Name:                    "webhook",
 			Description:             "Webhook",
-			ProviderId:              2,
+			ProviderID:              2,
 			ActivatedAt:             0,
 			CreatedAt:               1615969145,
 			UserData: map[string]string{
@@ -270,7 +270,7 @@ func TestIntegrationService_Read(t *testing.T) {
 		ID:                      112107,
 		Name:                    "webhook",
 		Description:             "Webhook",
-		ProviderId:              2,
+		ProviderID:              2,
 		ActivatedAt:             1615819798,
 		CreatedAt:               1615819798,
 		UserData: map[string]string{
@@ -361,10 +361,10 @@ func TestIntegrationService_Update(t *testing.T) {
 				id: 112107,
 				integration: &WebHookIntegration{
 					Active:     false,
-					ProviderId: 2,
+					ProviderID: 2,
 					UserData: &WebHookData{
 						Name: "wlwu-test-5",
-						Url:  "http://www.example.org",
+						URL:  "http://www.example.org",
 					},
 				},
 			},

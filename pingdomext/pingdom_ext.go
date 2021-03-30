@@ -1,4 +1,4 @@
-package pingdom_ext
+package pingdomext
 
 import (
 	"bytes"
@@ -41,7 +41,7 @@ type authPayload struct {
 
 // ClientConfig represents a configuration for a pingdom client.
 type authResult struct {
-	RedirectUrl string `json:"redirectUrl"`
+	RedirectURL string `json:"redirectUrl"`
 }
 
 // NewClientWithConfig returns a Pingdom client.
@@ -144,17 +144,17 @@ func obtainToken(config ClientConfig) (*string, error) {
 	bodyBytes, _ := ioutil.ReadAll(authResp.Body)
 	bodyString := string(bodyBytes)
 
-	authRespJson := &authResult{}
-	err1 := json.Unmarshal([]byte(bodyString), &authRespJson)
+	authRespJSON := &authResult{}
+	err1 := json.Unmarshal([]byte(bodyString), &authRespJSON)
 
 	if err1 != nil {
 		return nil, err1
 	}
-	fmt.Println(authRespJson.RedirectUrl)
+	fmt.Println(authRespJSON.RedirectURL)
 
-	redirectUrl, err := url.Parse(authRespJson.RedirectUrl)
+	redirectURL, err := url.Parse(authRespJSON.RedirectURL)
 
-	tokenReq, err := http.NewRequest("GET", config.BaseURL+"/auth/swicus/callback?"+redirectUrl.Query().Encode(), nil)
+	tokenReq, err := http.NewRequest("GET", config.BaseURL+"/auth/swicus/callback?"+redirectURL.Query().Encode(), nil)
 	tokenReq.AddCookie(sessionCookie)
 	tokenResp, err := config.HTTPClient.Do(tokenReq)
 	if err != nil {
