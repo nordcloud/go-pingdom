@@ -80,4 +80,9 @@ func TestIntegrations(t *testing.T) {
 	assert.NotNil(t, delMsg)
 	assert.True(t, delMsg.Status)
 
+	listProviderMsg, err := client_ext.Integrations.ListProviders()
+	assert.NoError(t, err)
+	assert.NotNil(t, listProviderMsg)
+	assert.Equal(t, len(listProviderMsg), 2)
+
 }

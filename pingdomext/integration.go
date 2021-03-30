@@ -113,3 +113,30 @@ func (cs *IntegrationService) Delete(id int) (*IntegrationStatus, error) {
 	}
 	return m.IntegrationStatus, err
 }
+
+// ListProviders returns the response holding a list of Provider.
+func (cs *IntegrationService) ListProviders() ([]IntegrationProvider, error) {
+
+	req, err := cs.client.NewRequest("GET", "/integrations/provider", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := cs.client.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if err := validateResponse(resp); err != nil {
+		return nil, err
+	}
+
+	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	bodyString := string(bodyBytes)
+
+	m := &[]IntegrationProvider{}
+	err = json.Unmarshal([]byte(bodyString), &m)
+
+	return *m, err
+}

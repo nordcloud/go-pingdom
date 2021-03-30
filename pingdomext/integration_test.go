@@ -462,3 +462,116 @@ func TestIntegrationService_Delete(t *testing.T) {
 func testMethod(t *testing.T, r *http.Request, want string) {
 	assert.Equal(t, want, r.Method)
 }
+
+func TestIntegrationService_ListProviders(t *testing.T) {
+	setup()
+	defer teardown()
+
+	mux.HandleFunc("/integrations/provider", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "GET")
+		fmt.Fprint(w, `[
+			{
+				"data": [
+					{
+						"required": true,
+						"description": "E-Mail",
+						"name": "email",
+						"validation_options": {},
+						"validation": "email"
+					},
+					{
+						"required": true,
+						"description": "API Token",
+						"name": "api_key",
+						"validation_options": {
+							"min_length": 64,
+							"max_length": 64
+						},
+						"validation": "string"
+					},
+					{
+						"required": true,
+						"description": "Name",
+						"name": "name",
+						"validation_options": {},
+						"validation": "string"
+					}
+				],
+				"id": 1,
+				"description": "Librato",
+				"name": "librato"
+			},
+			{
+				"data": [
+					{
+						"required": true,
+						"description": "URL",
+						"name": "url",
+						"validation_options": {},
+						"validation": "url"
+					},
+					{
+						"required": true,
+						"description": "Name",
+						"name": "name",
+						"validation_options": {},
+						"validation": "string"
+					},
+					{
+						"required": false,
+						"description": "Use legacy BeepManager format",
+						"name": "legacy",
+						"validation_options": {},
+						"validation": "bool"
+					}
+				],
+				"id": 2,
+				"description": "Webhook",
+				"name": "webhook"
+			}
+		]`)
+	})
+
+	want := []IntegrationProvider{
+		{
+			ID:          1,
+			Name:        "librato",
+			Description: "Librato",
+		},
+		{
+
+			ID:          2,
+			Name:        "webhook",
+			Description: "Webhook",
+		},
+	}
+
+	tests := []struct {
+		name    string
+		client  *Client
+		want    []IntegrationProvider
+		wantErr bool
+	}{
+		{
+			name:    "valid",
+			client:  client,
+			want:    want,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cs := &IntegrationService{
+				client: tt.client,
+			}
+			got, err := cs.ListProviders()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("IntegrationService.ListProviders() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("IntegrationService.ListProviders() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

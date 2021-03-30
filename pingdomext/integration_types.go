@@ -6,6 +6,13 @@ import (
 	"strconv"
 )
 
+// IntegrationProvider represents a Pingdom integration provider.
+type IntegrationProvider struct {
+	ID          int    `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
 // WebHookIntegration represents a Pingdom WebHook integration.
 type WebHookIntegration struct {
 	Active     bool         `json:"active"`
