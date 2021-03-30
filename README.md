@@ -39,6 +39,35 @@ export PINGDOM_API_TOKEN=pingdom_api_token
 ./your_application
 ```
 
+
+### Pindom Extension Client ###
+
+Construct a new Pingdom extension client:
+
+```go
+client_ext, err := pingdomext.NewClientWithConfig(pingdomext.ClientConfig{
+    Username: "test_user",
+    Password: "test_pwd",
+    HTTPClient: &http.Client{
+        CheckRedirect: func(req *http.Request, via []*http.Request) error {
+            return http.ErrUseLastResponse
+        },
+    },
+})
+```
+
+Using a Pingdom extention client, you can access supported services, like integration service.
+
+You must override the CheckRedirect since there have multiple redirect while get the jwt token for access api. 
+
+The `Username` and `Password` can also implicitly be provided by setting the environment variable `PINGDOM_USERNAME` and `PINGDOM_PASSWORD`:
+
+```bash
+export PINGDOM_USERNAME=test_user
+export PINGDOM_PASSWORD=test_pwd
+./your_application
+```
+
 ### CheckService ###
 
 This service manages pingdom Checks which are represented by the `Check` struct.
@@ -317,6 +346,70 @@ result, err := client.Contacts.Delete(contactId)
 fmt.Println(result.Message)
 ```
 
+
+### IntegrationService ###
+
+This service manages pingdom Integrations which are represented by the `Integration` struct. Now only support manages the WebHook Integrations.
+When creating or updating Integrations you must specify the `Active`, `ProviderID` and `WebHookData`.  
+
+
+Get a list of all integrations:
+
+```go
+integrations, err := client_ext.Integrations.List()
+fmt.Println("Integrations:", integrations) 
+```
+
+Create a new WebHook Integration:
+
+```go
+newIntegration := pingdomext.WebHookIntegration{
+	Active:     false,
+	ProviderID: 2,
+	UserData: &pingdomext.WebHookData{
+		Name: "tets-1",
+		URL:  "http://www.example.com",
+	},
+}
+integrationStatus, err := client_ext.Integrations.Create(&newIntegration)
+fmt.Println("Created integration:", integrationStatus) 
+```
+
+Get details for a specific integration:
+
+```go
+integrationDetail, err := client_ext.Integrations.Read(12345)
+```
+
+
+Update a integration:
+
+```go
+updatedIntegration := pingdomext.WebHookIntegration{
+	Active:     true,
+	ProviderID: 2,
+	UserData: &pingdomext.WebHookData{
+		Name: "tets-3",
+		URL:  "http://www.example5.com",
+	},
+}
+updateMsg, err := client_ext.Integrations.Update(12345, &updatedIntegration)
+```
+
+Delete a integration:
+
+```go
+delMsg, err := client_ext.Integrations.Delete(12345)
+```
+
+List all integration providers:
+
+```go
+listProviders, err := client_ext.Integrations.ListProviders()
+```
+
+
+
 ## Development ##
 
 ### Acceptance Tests ###
@@ -324,6 +417,11 @@ fmt.Println(result.Message)
 You can run acceptance tests against the actual pingdom API to test any changes:
 ```
 PINGDOM_API_TOKEN=[api token] make acceptance
+```
+
+In order to run acceptance tests against the pingdom extension API, the following environment variables must be set:
+```
+PINGDOM_USERNAME=[username] PINGDOM_PASSWORD=[password] make acceptance
 ```
 
 Note that this will create actual resources in your Pingdom account.  The tests will make a best effort to clean up but these would
