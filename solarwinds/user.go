@@ -64,7 +64,11 @@ func (us *UserService) Delete(email string) error {
 	if activeUser != nil {
 		return NewErrorAttemptDeleteActiveUser(email)
 	}
-	return us.InvitationService.Revoke(email)
+	err := us.InvitationService.Revoke(email)
+	if err != nil {
+		return NewNetworkError(err)
+	}
+	return err
 }
 
 // Retrieve return the user information, either it is an invitation or an active user.

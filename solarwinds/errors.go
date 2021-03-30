@@ -3,7 +3,8 @@ package solarwinds
 import "fmt"
 
 const (
-	AttemptDeleteActiveUser uint32 = iota
+	NetworkError uint32 = iota
+	AttemptDeleteActiveUser
 )
 
 type ClientError struct {
@@ -13,6 +14,13 @@ type ClientError struct {
 
 func (c *ClientError) Error() string {
 	return fmt.Sprintf("status: %d, err: %v", c.StatusCode, c.Err)
+}
+
+func NewNetworkError(cause error) error {
+	return &ClientError{
+		StatusCode: NetworkError,
+		Err:        cause,
+	}
 }
 
 func NewErrorAttemptDeleteActiveUser(user string) error {
