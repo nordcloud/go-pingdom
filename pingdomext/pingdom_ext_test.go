@@ -53,15 +53,15 @@ func TestNewClientWithConfig(t *testing.T) {
 		}
 		w.Header().Add("Set-Cookie", "pingdom_login_session_id=qw4us4Ed7aLSGugMRDHkqM9G6mwuKdn9Hz90r6IHhRc%3D; Path=/; HttpOnly; Secure")
 		w.Header().Add("Location", "https://my.solarwinds.cloud/login?response_type=code&scope=openid%20swicus&client_id=pingdom&state=htILEppzoMPtb6UjOdM98XPS3Mcwkr3Y&redirect_uri=https%3A%2F%2Fmy.pingdom.com%2Fauth%2Fswicus%2Fcallback")
-		_, _ = fmt.Fprintf(w, fmt.Sprintf("{}"))
+		_, _ = fmt.Fprintf(w, "{}")
 	})
 
 	mux.HandleFunc("/v1/login", func(w http.ResponseWriter, r *http.Request) {
 		if m := "POST"; m != r.Method {
 			t.Errorf("Request method = %v, want %v", r.Method, m)
 		}
-		_, _ = fmt.Fprintf(w, fmt.Sprintf(
-			`{"RedirectUrl": "https://my.pingdom.com/auth/swicus/callback?code=70kRkkAB7OIv5YYTPR6LpHH-2jMbtaDEHScLDw1amfw.baMoW3w-HkNXOj_I8pv580mRwBjIRVdFLW3cXFGRX9o&scope=openid+swicus&state=htILEppzoMPtb6UjOdM98XPS3Mcwkr3Y"}`),
+		_, _ = fmt.Fprintf(w,
+			`{"RedirectUrl": "https://my.pingdom.com/auth/swicus/callback?code=70kRkkAB7OIv5YYTPR6LpHH-2jMbtaDEHScLDw1amfw.baMoW3w-HkNXOj_I8pv580mRwBjIRVdFLW3cXFGRX9o&scope=openid+swicus&state=htILEppzoMPtb6UjOdM98XPS3Mcwkr3Y"}`,
 		)
 	})
 
@@ -70,7 +70,7 @@ func TestNewClientWithConfig(t *testing.T) {
 			t.Errorf("Request method = %v, want %v", r.Method, m)
 		}
 		w.Header().Add("Set-Cookie", "jwt=my_test_token")
-		_, _ = fmt.Fprintf(w, fmt.Sprintf("{}"))
+		_, _ = fmt.Fprintf(w, "{}")
 	})
 
 	url, err := url.Parse(server.URL)
@@ -91,6 +91,38 @@ func TestNewClientWithConfig(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, c.JWTToken, "my_test_token")
 	assert.NotNil(t, c.Integrations)
+}
+
+func TestNewClientWithConfig2(t *testing.T) {
+	setup()
+	defer teardown()
+
+	mux.HandleFunc("/auth/login", func(w http.ResponseWriter, r *http.Request) {
+		if m := "GET"; m != r.Method {
+			t.Errorf("Request method = %v, want %v", r.Method, m)
+		}
+		w.Header().Add("Set-Cookie", "pingdom_login_session_id=qw4us4Ed7aLSGugMRDHkqM9G6mwuKdn9Hz90r6IHhRc%3D; Path=/; HttpOnly; Secure")
+		w.Header().Add("Location", "https://my.solarwinds.cloud/login?response_type=code&scope=openid%20swicus&client_id=pingdom&state=htILEppzoMPtb6UjOdM98XPS3Mcwkr3Y&redirect_uri=https%3A%2F%2Fmy.pingdom.com%2Fauth%2Fswicus%2Fcallback")
+		_, _ = fmt.Fprintf(w, "{}")
+	})
+
+	url, err := url.Parse(server.URL)
+	assert.NotEmpty(t, url)
+	assert.NoError(t, err)
+
+	c, err := NewClientWithConfig(ClientConfig{
+		Username: "test_user",
+		Password: "test_pwd",
+		BaseURL:  url.String(),
+		AuthURL:  url.String() + "/v1/login",
+		HTTPClient: &http.Client{
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		},
+	})
+	assert.Error(t, err)
+	assert.Nil(t, c)
 
 }
 
@@ -185,7 +217,7 @@ func TestValidateResponse(t *testing.T) {
 		}`)),
 	}
 
-	want := &pingdom.PingdomError{400, "Bad Request", "This is an error"}
+	want := &pingdom.PingdomError{StatusCode: 400, StatusDesc: "Bad Request", Message: "This is an error"}
 	assert.Equal(t, want, validateResponse(invalid))
 }
 

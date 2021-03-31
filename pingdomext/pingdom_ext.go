@@ -106,6 +106,9 @@ func obtainToken(config ClientConfig) (*string, error) {
 	}
 
 	stateReq, err := http.NewRequest("GET", stateURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 	stateResp, err := config.HTTPClient.Do(stateReq)
 	if err != nil {
 		return nil, err
@@ -114,7 +117,9 @@ func obtainToken(config ClientConfig) (*string, error) {
 	defer stateResp.Body.Close()
 
 	location, err := stateResp.Location()
-	fmt.Println(location)
+	if err != nil {
+		return nil, err
+	}
 
 	sessionCookie, err := getCookie(stateResp, "pingdom_login_session_id")
 	if err != nil {
@@ -133,6 +138,9 @@ func obtainToken(config ClientConfig) (*string, error) {
 	}
 
 	authReq, err := http.NewRequest("POST", config.AuthURL, bytes.NewReader(authBody))
+	if err != nil {
+		return nil, err
+	}
 	authReq.Header.Add("Content-Type", "application/json")
 
 	authResp, err := config.HTTPClient.Do(authReq)
@@ -153,8 +161,13 @@ func obtainToken(config ClientConfig) (*string, error) {
 	fmt.Println(authRespJSON.RedirectURL)
 
 	redirectURL, err := url.Parse(authRespJSON.RedirectURL)
-
+	if err != nil {
+		return nil, err
+	}
 	tokenReq, err := http.NewRequest("GET", config.BaseURL+"/auth/swicus/callback?"+redirectURL.Query().Encode(), nil)
+	if err != nil {
+		return nil, err
+	}
 	tokenReq.AddCookie(sessionCookie)
 	tokenResp, err := config.HTTPClient.Do(tokenReq)
 	if err != nil {

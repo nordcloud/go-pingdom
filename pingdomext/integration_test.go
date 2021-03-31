@@ -264,6 +264,12 @@ func TestIntegrationService_Read(t *testing.T) {
 			
 		}`)
 	})
+
+	mux.HandleFunc("/data/v3/integration/112108", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "GET")
+		fmt.Fprint(w, `{"integration": null}`)
+	})
+
 	want := IntegrationGetResponse{
 
 		NumberOfConnectedChecks: 2,
@@ -296,9 +302,16 @@ func TestIntegrationService_Read(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "invalid",
+			name:    "null",
 			client:  client,
 			args:    args{id: 112108},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name:    "invalid",
+			client:  client,
+			args:    args{id: 112109},
 			want:    nil,
 			wantErr: true,
 		},
