@@ -60,11 +60,11 @@ Using a Pingdom extention client, you can access supported services, like integr
 
 You must override the CheckRedirect since there have multiple redirect while get the jwt token for access api. 
 
-The `Username` and `Password` can also implicitly be provided by setting the environment variable `PINGDOM_USERNAME` and `PINGDOM_PASSWORD`:
+The `Username` and `Password` can also implicitly be provided by setting the environment variable `SOLARWINDS_USER` and `SOLARWINDS_PASSWD`:
 
 ```bash
-export PINGDOM_USERNAME=test_user
-export PINGDOM_PASSWORD=test_pwd
+export SOLARWINDS_USER=test_user
+export SOLARWINDS_PASSWD=test_pwd
 ./your_application
 ```
 
@@ -421,7 +421,7 @@ PINGDOM_API_TOKEN=[api token] make acceptance
 
 In order to run acceptance tests against the pingdom extension API, the following environment variables must be set:
 ```
-PINGDOM_USERNAME=[username] PINGDOM_PASSWORD=[password] make acceptance
+SOLARWINDS_USER=[username] SOLARWINDS_PASSWD=[password] make acceptance
 ```
 
 Note that this will create actual resources in your Pingdom account.  The tests will make a best effort to clean up but these would

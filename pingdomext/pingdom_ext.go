@@ -67,13 +67,13 @@ func NewClientWithConfig(config ClientConfig) (*Client, error) {
 	}
 
 	if config.Username == "" {
-		if envUsername, set := os.LookupEnv("PINGDOM_USERNAME"); set {
+		if envUsername, set := os.LookupEnv("SOLARWINDS_USER"); set {
 			config.Username = envUsername
 		}
 	}
 
 	if config.Password == "" {
-		if envPassword, set := os.LookupEnv("PINGDOM_PASSWORD"); set {
+		if envPassword, set := os.LookupEnv("SOLARWINDS_PASSWD"); set {
 			config.Password = envPassword
 		}
 	}
