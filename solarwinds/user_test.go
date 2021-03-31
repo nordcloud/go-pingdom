@@ -178,7 +178,7 @@ func TestDeleteUser(t *testing.T) {
 
 	err = userService.Delete(activeUserEmail)
 	assert.Error(t, err)
-	assert.Equal(t, AttemptDeleteActiveUser, err.(*ClientError).StatusCode)
+	assert.Equal(t, ErrCodeDeleteActiveUserException, err.(*ClientError).StatusCode)
 
 	err = userService.Delete(nonExistUserEmail)
 	assert.Error(t, err)

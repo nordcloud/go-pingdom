@@ -3,8 +3,8 @@ package solarwinds
 import "fmt"
 
 const (
-	NetworkError uint32 = iota
-	AttemptDeleteActiveUser
+	ErrCodeNetworkException uint32 = iota
+	ErrCodeDeleteActiveUserException
 )
 
 type ClientError struct {
@@ -18,14 +18,14 @@ func (c *ClientError) Error() string {
 
 func NewNetworkError(cause error) error {
 	return &ClientError{
-		StatusCode: NetworkError,
+		StatusCode: ErrCodeNetworkException,
 		Err:        cause,
 	}
 }
 
 func NewErrorAttemptDeleteActiveUser(user string) error {
 	return &ClientError{
-		StatusCode: AttemptDeleteActiveUser,
+		StatusCode: ErrCodeDeleteActiveUserException,
 		Err:        fmt.Errorf("deleting active user %v is not supported", user),
 	}
 }

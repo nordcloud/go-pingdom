@@ -14,8 +14,8 @@ func TestClientErrors(t *testing.T) {
 		NewNetworkError(errors.New("underlying network error")),
 	}
 	expectedErrMsg := []string{
-		fmt.Sprintf("status: %d, err: deleting active user %v is not supported", AttemptDeleteActiveUser, user),
-		fmt.Sprintf("status: %d, err: underlying network error", NetworkError),
+		fmt.Sprintf("status: %d, err: deleting active user %v is not supported", ErrCodeDeleteActiveUserException, user),
+		fmt.Sprintf("status: %d, err: underlying network error", ErrCodeNetworkException),
 	}
 	for i, err := range errs {
 		if err != nil {
