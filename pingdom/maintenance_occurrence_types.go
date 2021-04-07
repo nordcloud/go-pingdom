@@ -12,7 +12,7 @@ type Occurrence struct {
 	From          int64  `json:"from"`
 	To            int64  `json:"to"`
 	Duration      int    `json:"duration"`
-	DurationCount string `json:"durationCount"`
+	DurationUnit  string `json:"durationunit"`
 }
 
 type ListOccurrenceQuery struct {
